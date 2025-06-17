@@ -3,7 +3,8 @@ import Mathlib
 -- P is a predicate, Q, R and S are propositions
 variable {α : Type*} (P : α → Prop) (Q R S: Prop)
 
--- Forward reasoning for Modus Ponens
+-- Forward reasoning
+--Modus Ponens
 example (h : Q → R) (hQ : Q) : R := by
 -- The `exact` tactic is used when the goal is already an hypothesis or a theoroem.
 -- `h hQ` means putting `hQ : Q` into the arrow `h : Q → R`,
@@ -33,67 +34,36 @@ example (h1 : Q → R) (h2 : R → S)(hQ : Q) : S := by
   apply h1
   exact hQ
 
--- Quantifiers
+-- Universal Quantifier : using universal statements
 example (x : α) (h : ∀ y, P y) : P x := by
-  -- exact h x
-  apply h
+  exact h x
+  --apply h
 
+-- Existential Quantifier : proving existential statments -- Use the tactic `use`
 example (x : α) (h : P x) : ∃ y, P y := by
   use x
 
--- variable {α : Type*} (P : α → Prop) (Q R S: Prop)
+-- Exercise
 example (x : α) (h : ∀ y, P y → Q) (hx : P x) : Q := by
   sorry
 
--- `∧`: and, conjunction
-example (hQ : Q) (hR: R) : Q ∧ R := by
-  sorry
+-- Proving implication
+-- Use the tactic `intro` to introduce the hypothesis
+example (h1 : Q → R) (h2 : R → S) : Q → S := by
+  intro h
+  apply h2
+  apply h1
+  exact h
 
-example (h : Q ∧ R) : Q := by
-  sorry
+-- Universal Quantifier : proving universal statements.
+-- Use the tactic `intro` to introduce a variable
+example (h : ∀ y, Q → P y) (hQ : Q): ∀ y, P y := by
+  intro y
+  apply h y
+  exact hQ
 
--- `∨`: (inclusive) or, disjunction
-example (hQ : Q) : Q ∨ R := by
-  sorry
-
-
-
-
-
-
-
-
---De Morgan's laws:
-example (h : ¬∃ x, P x) : ∀ x, ¬P x := by
-  intro x
-  intro h'
-  apply h
-  use x
---push_neg at h
---exact h
-
-example (h : ∀ x, ¬P x) : ¬∃ x, P x := by
-  intro h'
-  rcases h' with ⟨x, hx⟩
-  apply h x
-  exact hx
---push_neg
---exact h
-
-example (h : ¬∀ x, P x) : ∃ x, ¬P x := by
-  by_contra h'
-  apply h
-  intro x
-  by_contra h''
-  apply h'
-  use x
---push_neg at h
---exact h
-
-example (h : ∃ x, ¬P x) : ¬∀ x, P x := by
-  intro h'
-  rcases h with ⟨x, hx⟩
-  apply hx
-  exact h' x
---push_neg
---exact h
+-- Existential Quantifier : using existential statments
+-- Use the tactic `rcases` to destruct the existential quantifier
+example (h : ∃ y, P y) (h' : ∀ y, P y → Q) : Q := by
+  rcases h with ⟨y, hy⟩
+  exact h' y hy

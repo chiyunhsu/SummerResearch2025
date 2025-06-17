@@ -58,6 +58,8 @@ example (h : ∀ x, ¬P x) : ¬∃ x, P x := by
 --push_neg
 --exact h
 
+-- `by_contra` is a tactic that allows you to prove a goal by contradiction.
+-- It assumes the negation of the goal and tries to derive a contradiction.
 example (h : ¬∀ x, P x) : ∃ x, ¬P x := by
   by_contra h'
   apply h

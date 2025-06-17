@@ -1,6 +1,6 @@
 import Mathlib
 
--- P is a quantifier, Q, R and S are propositions
+-- P is a predicate, Q, R and S are propositions
 variable {α : Type*} (P : α → Prop) (Q R S: Prop)
 
 -- Forward reasoning for Modus Ponens
@@ -22,10 +22,10 @@ example (h : Q → R) (hQ : Q) : R := by
 -- `have` is used to introduce an intermeidate step
 example (h1 : Q → R) (h2 : R → S)(hQ : Q) : S := by
   have hR : R := by
-    sorry
-  have hS : S := by
-    sorry
-  exact hS
+    apply h1
+    exact hQ
+  apply h2
+  exact hR
 
 -- Backward reasoning
 example (h1 : Q → R) (h2 : R → S)(hQ : Q) : S := by
@@ -34,11 +34,28 @@ example (h1 : Q → R) (h2 : R → S)(hQ : Q) : S := by
   exact hQ
 
 -- Quantifiers
-example (x : α) (h : ∀ x, P x) : P x := by
-  exact h x
+example (x : α) (h : ∀ y, P y) : P x := by
+  -- exact h x
+  apply h
 
-example (x : α) (h : P x) : ∃ x, P x := by
+example (x : α) (h : P x) : ∃ y, P y := by
   use x
+
+-- variable {α : Type*} (P : α → Prop) (Q R S: Prop)
+example (x : α) (h : ∀ y, P y → Q) (hx : P x) : Q := by
+  sorry
+
+-- `∧`: and, conjunction
+example (hQ : Q) (hR: R) : Q ∧ R := by
+  sorry
+
+example (h : Q ∧ R) : Q := by
+  sorry
+
+-- `∨`: (inclusive) or, disjunction
+example (hQ : Q) : Q ∨ R := by
+  sorry
+
 
 
 

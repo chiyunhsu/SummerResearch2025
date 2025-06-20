@@ -45,7 +45,7 @@ example (x : α) (h : P x) : ∃ y, P y := by
 
 -- Exercise
 example (x : α) (h : ∀ y, P y → Q) (hx : P x) : Q := by
-  sorry
+  apply h x hx
 
 -- Proving implication
 -- Use the tactic `intro` to introduce the hypothesis

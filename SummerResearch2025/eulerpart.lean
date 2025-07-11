@@ -4,43 +4,100 @@ import Mathlib.Data.Multiset.Basic
 structure partition{n:ℕ} where
   parts     : Multiset ℕ
   sums      : parts.sum = n
-
 structure OP (n : ℕ) where
   odd_parts           : Multiset ℕ
   sums                : odd_parts.sum = n
   odd                 : ∀ x ∈ odd_parts, x % 2 = 1
-  dop                 : Multiset ℕ
-  dop_dis             : dop.Nodup
-  dis:           ∀ x∈ dop, x∈ dop →  x ∈ odd_parts
-                  ∧  (∀x ∈odd_parts,x ∈ odd_parts → x∈ dop)
+  distinct_odd_parts  : Finset ℕ
+  dop_def             : distinct_odd_parts=odd_parts.toFinset
 structure DistinctPartition (n : ℕ) where
   dis_parts       : Multiset ℕ
   sums            : dis_parts.sum = n
   dis             : dis_parts.Nodup
-structure binary (n : ℕ) where
-  twos            : Multiset ℕ
-  unique          : twos.Nodup
-  force_twos      : ∀ x ∈ twos, ∃ k : ℕ, 2 ^ k = x
-  sums            : twos.sum = n
---rather than sturcture, use something resursive
--- def binary2 (binary: binary):Prop:=by
---   sorry
-/-- `bits n` returns a list of Bools which correspond to the binary representation of n, where
-    the head of the list represents the least significant bit -/
-def bits : ℕ → List Bool :=
-  binaryRec [] fun b _ IH => b :: IH
-  --didn't find a index thingy in list but can
-  --concat and length so its find to define
-def binaryDecompose (x m : ℕ) : List ℕ :=
-  let bits := Nat.binaryDigits m
+def binary2: ℕ → Multiset Nat
+| 0 => 0
+|(m+1)  =>
+  let k := Nat.log2 (m+1)
+  let p := 2 ^ k
+  p ::ₘ binary2 ((m+1)-p)
+
+lemma binary2_sum_to_n(n:ℕ): (binary2 n).sum = n := by
+  induction n using Nat.strong_induction_on with n ih
+  cases n with
+  | zero => simp [binary2]
+  | succ n =>
+    let k := Nat.log2 (n + 1)
+    let p := 2 ^ k
+  have hp_le : p ≤ n + 1 := Nat.le_of_pow_log2_le (Nat.succ_pos n)
+    have hrec : n + 1 - p < n + 1 :=by
+      sorry
+  sorry
+
+  --use induction add one to the multiset
+lemma binary_no_duplicate(n:ℕ): (binary2 n).Nodup:= by
+  sorry
+--natural number include 0 but we don't need natural number for
+--partitions just positive integers need to fix later
+lemma nd_time_const_nd(n:ℕ) (ms: Multiset ℕ)(hnd:ms.Nodup):
+  (ms.map fun x ↦ x * n).Nodup:=by
+  sorry
+lemma const_time_2nondp_nd(n1:ℕ) (n2:ℕ)(hne:n1≠n2)
+        (ms: Multiset ℕ)(hnd:ms.Nodup):
+  Disjoint (ms.map fun x ↦ x * n1) (ms.map fun x ↦ x * n2):=by
+  sorry
+lemma finset_nsmul_eq_mul (s : Multiset ℕ) :
+    ∑ x ∈ s.toFinset, (s.count x) * x =
+    ∑ x ∈ s.toFinset, (s.count x) • x:= by
+    simp[nsmul_eq_mul]
+
+lemma count_sum (s : Multiset ℕ) :
+    ∑ x ∈ s.toFinset, (s.count x) * x = s.sum:= by
+    rw [finset_nsmul_eq_mul]
+    rw[ ←Finset.sum_multiset_map_count]
+    simp
+
 def OddToDistinct (n : ℕ) : OP n → DistinctPartition n:= by
   intro h
+  let dis_parts := (h.distinct_odd_parts).val.bind fun y ↦
+      (binary2 (h.odd_parts.count y)).map fun z ↦ z * y
+      -- oddpartition
+      -- op:{1,3,3,3,5,5}
+      -- dop:{1,3,5}
+      -- 3 -> 3 * 3 -> 3* {2^1,2^0} ->{6,3}
+      --5 ->...{10}
+      --remember its the largest odd factor is different in terms of math
+      --dop.map -> {},{},{}
+      --dop.bind ->{a.b.,d,d,ae}
   refine{
-    dis_parts := h.dop.bind (fun y ↦
-        (binary (h.odd_parts.count y)).twos).map fun z ↦ z * y,
-        --want y -> {z1*y, z2*y,z3*y } z1=2^i1, z2=2^i2
-        --3+3+3+3+3
-        --3 -> {1* 3, 4 * 3}
-    sums      := ?_
-    dis       := ?_
+    dis_parts := dis_parts
+    sums      := by
+      simp[dis_parts]
+      simp[Multiset.sum_map_mul_right]
+      simp[binary2_sum_to_n]
+      simp[←h.sums]
+      simp[←count_sum]
+      rw[h.dop_def]
+    dis       := by
+      dsimp[dis_parts]
+      apply Multiset.nodup_bind.2
+      refine ⟨?all,?pairwise⟩
+      intro a ain
+      exact nd_time_const_nd
+        (n:=a)
+        (ms:=(binary2 (Multiset.count a h.odd_parts)))
+        (hnd:= binary_no_duplicate (Multiset.count a h.odd_parts))
+
+      dsimp[Multiset.Pairwise]
+      constructor
+      --tryin gto prove {3,6} and {5} are pairwise disjoint
+
+      use h.distinct_odd_parts.toList
+      apply Finset.nodup h.distinct_odd_parts
+      simp
+
+      -- constructor
+      -- dsimp[List.Pairwise]
+
+      --use (h.distinct_odd_parts.val).toList
+
   }

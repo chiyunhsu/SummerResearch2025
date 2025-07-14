@@ -30,7 +30,7 @@ def hasSquareArea (p q : ℤ) : Prop :=
   ∃ a : ℕ, p * q * (p^2 - q^2) = a^2
 
 def isSquare (n : ℤ) : Prop :=
-  ∃ a : ℕ, a^2 = n
+  ∃ k : ℕ, k^2 = n
 
 def productOfCoprimeFactorsIsSquare (p q : ℤ) : Prop :=
   isSquare (p * q * (p + q) * (p - q))
@@ -76,24 +76,89 @@ lemma odd_coprime_two {a : ℤ} (h : a % 2 = 1) : Int.gcd a 2 = 1 := by
     rw [this] at h
     contradiction
 
+-- pick a prime, if a power of it divides u * v, the power must be even
+-- find a way to search and run through all the primes that divide?
+
+-- look at:
+-- https://github.com/leanprover-community/mathlib4/blob/d19cd93f3db24ca3a2ab957c266dd7e1ce2110fa/Mathlib/RingTheory/Int/Basic.lean#L47-L57
+
 -- lemma: if a*b is square with a, b coprime, then a and b are squares
 -- square: exponent of each prime is even in factorization
 -- coprime: if nonzero exponent of prime in one number, other number's prime must have zero exponent
+-- factorization was very difficult, was not able to make progress
+theorem coe_gcd (i j : ℤ) : ↑(Int.gcd i j) = GCDMonoid.gcd i j :=
+  rfl
+
+theorem sq_of_gcd_eq_one {a b c : ℤ} (h : Int.gcd a b = 1) (heq : a * b = c ^ 2) :
+    ∃ a0 : ℤ, a = a0 ^ 2 ∨ a = -a0 ^ 2 := by
+  have h' : IsUnit (GCDMonoid.gcd a b) := by
+    rw [← coe_gcd, h, Int.ofNat_one]
+    exact isUnit_one
+  obtain ⟨d, ⟨u, hu⟩⟩ := exists_associated_pow_of_mul_eq_pow h' heq
+  use d
+  rw [← hu]
+  rcases Int.units_eq_one_or u with hu' | hu' <;>
+    · rw [hu']
+      simp
+
 lemma coprime_square_product {a b : ℤ}
     (hcoprime : Int.gcd a b = 1)
-    (hsquare : isSquare (a * b)) :
+    (hsquare : isSquare (a * b))
+    (hpos : a > 0 ∧ b > 0) :
     isSquare a ∧ isSquare b := by
 
-  -- Work with natural numbers?
-  let a' := Int.natAbs a
-  let b' := Int.natAbs b
-
-  have hpos : a' * b' = Int.natAbs (a * b) := by
-    rw [Int.natAbs_mul]
-
   obtain ⟨c, hc⟩ := hsquare
-  let c' := Int.natAbs c
-  sorry
+
+  have ha := sq_of_gcd_eq_one hcoprime hc.symm
+  have hb := sq_of_gcd_eq_one (Int.gcd_comm b a ▸ hcoprime) (by rw [mul_comm, hc])
+
+  obtain ⟨a0, ha0 | ha0⟩ := ha
+  obtain ⟨b0, hb0 | hb0⟩ := hb
+
+  -- Case 1: a = a0^2, b = b0^2
+  · constructor
+    · use a0.natAbs
+      rw [ha0]
+      rw [← Int.natAbs_of_nonneg (sq_nonneg a0)]
+      rw [Int.natAbs_pow]
+      norm_cast
+
+    · use b0.natAbs
+      rw [hb0]
+      rw [← Int.natAbs_of_nonneg (sq_nonneg b0)]
+      rw [Int.natAbs_pow]
+      norm_cast
+
+  -- Case 2: a = a0^2, b = -b0^2
+  · exfalso
+    have b_pos := hpos.right
+    rw [hb0] at b_pos
+    -- Split cases on sign of b0:
+    cases Int.le_total 0 b0 with
+    | inl hpos_b0 =>
+      have square_nonneg : 0 ≤ b0 * b0 := Int.mul_nonneg hpos_b0 hpos_b0
+      linarith
+    | inr hneg_b0 =>
+      have square_nonneg : 0 ≤ (-b0) * (-b0) := Int.mul_nonneg (Int.neg_nonneg_of_nonpos hneg_b0) (Int.neg_nonneg_of_nonpos hneg_b0)
+      -- b0^2 = (-b0)^2
+      rw [← Int.mul_neg_one] at square_nonneg
+      linarith
+
+  -- Case 3: a = -a0^2, b = b0^2
+  · exfalso
+    have a_pos := hpos.left
+    rw [ha0] at a_pos
+    -- Split cases on sign of a0:
+    cases Int.le_total 0 a0 with
+    | inl hpos_a0 =>
+      have square_nonneg : 0 ≤ a0 * a0 := Int.mul_nonneg hpos_a0 hpos_a0
+      linarith
+    | inr hneg_a0 =>
+      have square_nonneg : 0 ≤ (-a0) * (-a0) := Int.mul_nonneg (Int.neg_nonneg_of_nonpos hneg_a0) (Int.neg_nonneg_of_nonpos hneg_a0)
+      -- a0^2 = (-a0)^2
+      rw [← Int.mul_neg_one] at square_nonneg
+      linarith
+
 
 lemma coprime_linear_factors {p q : ℤ} (hgood : goodParam p q) (hsq : isSquare (p * q * (p + q) * (p - q))) :
   isSquare p ∧ isSquare q ∧ isSquare (p + q) ∧ isSquare (p - q) := by
@@ -131,5 +196,7 @@ lemma coprime_linear_factors {p q : ℤ} (hgood : goodParam p q) (hsq : isSquare
       rw [Int.gcd_comm]
       exact hcoprime_p_diff
     exact coprime_mul hcoprime_2 hcoprime_p
+
+  -- Now apply coprime_square_product to the product split as (p * q) * ((p + q) * (p - q))
 
   sorry

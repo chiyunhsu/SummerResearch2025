@@ -22,20 +22,38 @@ def binary2: ℕ → Multiset Nat
   p ::ₘ binary2 ((m+1)-p)
 
 lemma binary2_sum_to_n(n:ℕ): (binary2 n).sum = n := by
-  induction n using Nat.strong_induction_on with n ih
-  cases n with
+  induction' n using Nat.strong_induction_on with n1 ih
+  cases n1 with
   | zero => simp [binary2]
   | succ n =>
     let k := Nat.log2 (n + 1)
     let p := 2 ^ k
-  have hp_le : p ≤ n + 1 := Nat.le_of_pow_log2_le (Nat.succ_pos n)
-    have hrec : n + 1 - p < n + 1 :=by
-      sorry
-  sorry
+    have hp_le : p ≤ n + 1 := by
+      dsimp[p,k]
+      rw[Nat.log2_eq_log_two]
+      have temp: n+1 ≠0:= by
+        simp
+      exact Nat.pow_log_le_self
+        (b:=2)
+        (x:= n+1)
+        (hx:= temp)
+    let m := n + 1 - p
+    have h_m_lt: m < n + 1 := by
+      apply Nat.sub_lt (Nat.succ_pos n)
+      apply Nat.pow_pos
+      exact Nat.zero_lt_two
+    have ih_m := ih m h_m_lt
+    unfold binary2
+    simp only[Nat.add_sub_cancel' hp_le]
+    simp only [Multiset.sum_cons, ih_m]
+    rw[ih_m]
+    rw [Nat.add_sub_cancel' hp_le]
+
 
   --use induction add one to the multiset
 lemma binary_no_duplicate(n:ℕ): (binary2 n).Nodup:= by
   sorry
+
 --natural number include 0 but we don't need natural number for
 --partitions just positive integers need to fix later
 lemma nd_time_const_nd(n:ℕ) (ms: Multiset ℕ)(hnd:ms.Nodup):
@@ -55,19 +73,14 @@ lemma count_sum (s : Multiset ℕ) :
     rw [finset_nsmul_eq_mul]
     rw[ ←Finset.sum_multiset_map_count]
     simp
+lemma fsnp_listnp(fs: Finset N): (fs.val.toList.Nodup):=by
+  sorry
+
 
 def OddToDistinct (n : ℕ) : OP n → DistinctPartition n:= by
   intro h
   let dis_parts := (h.distinct_odd_parts).val.bind fun y ↦
       (binary2 (h.odd_parts.count y)).map fun z ↦ z * y
-      -- oddpartition
-      -- op:{1,3,3,3,5,5}
-      -- dop:{1,3,5}
-      -- 3 -> 3 * 3 -> 3* {2^1,2^0} ->{6,3}
-      --5 ->...{10}
-      --remember its the largest odd factor is different in terms of math
-      --dop.map -> {},{},{}
-      --dop.bind ->{a.b.,d,d,ae}
   refine{
     dis_parts := dis_parts
     sums      := by
@@ -88,16 +101,64 @@ def OddToDistinct (n : ℕ) : OP n → DistinctPartition n:= by
         (hnd:= binary_no_duplicate (Multiset.count a h.odd_parts))
 
       dsimp[Multiset.Pairwise]
-      constructor
-      --tryin gto prove {3,6} and {5} are pairwise disjoint
-
-      use h.distinct_odd_parts.toList
-      apply Finset.nodup h.distinct_odd_parts
+      refine ⟨?a, ?b⟩
+      use h.distinct_odd_parts.val.toList
       simp
+      have aa: h.distinct_odd_parts.val.toList.Nodup:=by
+        exact fsnp_listnp
+          (fs:=h.distinct_odd_parts)
+      let f : ℕ → Multiset ℕ :=
+        fun y ↦ (binary2 (h.odd_parts.count y)).map (fun z ↦ z * y)
 
-      -- constructor
-      -- dsimp[List.Pairwise]
+      apply(List.pairwiseDisjoint_iff_coe_toFinset_pairwise_disjoint
+        (l:= h.distinct_odd_parts.val.toList)
+        (f:= f)
+        (hn:= aa)
+      ).1
+      simp
+      intro h1 h2 h3 h4 h5
+      dsimp[Function.onFun]
+      dsimp[Disjoint]
 
-      --use (h.distinct_odd_parts.val).toList
+      have a1(x: ℕ)(ms:Multiset ℕ)(hms:ms ≤ f h1):∀ x ∈ ms, x % h1 = 0 ∧ x % h3 ≠ 0 :=by
+        sorry
+      have a2(x: ℕ)(ms:Multiset ℕ)(hms:ms ≤ f h3):∀ x ∈ ms , x % h3 = 0 ∧ x % h1 ≠ 0:=by
+        sorry
+      -- intro c1 c2 c3
+      by_contra! contr
+      rcases contr with ⟨c1,c2 ,c3,c4⟩
+      have b1: ∀ n ∈ c1, n % h1 = 0 ∧ n % h3 ≠ 0:=by
+        exact a1
+          (x:=n)
+          (ms:=c1)
+          (hms:=c2)
+      have b2: ∀ n ∈ c1, n % h3 = 0 ∧ n % h1 ≠ 0:=by
+        exact a2
+          (x:=n)
+          (ms:=c1)
+          (hms:=c3)
+      have b3: ∃ n∈ c1, n % h1 = 0 ∧ n % h1 ≠ 0 := by
+        -- intro a b
+        -- exact ⟨(b1 a b).left , (b2 a b).right⟩
+      exact b3
 
+
+
+
+
+
+
+
+      --tryin gto prove {3,6} and {5} are pairwise disjoint
+      --remember its the largest odd factor is different
+      --in terms of math
   }
+
+  -- oddpartition
+  -- op:{1,3,3,3,5,5}
+  -- dop:{1,3,5}
+  -- 3 -> 3 * 3 -> 3* {2^1,2^0} ->{6,3}
+  --5 ->...{10}
+  --remember its the largest odd factor is different in terms of math
+  --dop.map -> {},{},{}
+  --dop.bind ->{a.b.,d,d,ae}

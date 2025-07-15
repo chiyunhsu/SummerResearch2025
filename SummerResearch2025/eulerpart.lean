@@ -4,7 +4,8 @@ import Mathlib.Data.Multiset.Basic
 structure partition{n:ℕ} where
   parts     : Multiset ℕ
   sums      : parts.sum = n
-structure OP (n : ℕ) where
+structure OP (n : ℕ) where--currently just type
+--on implmentation partition is type, but OP is finset of type
   odd_parts           : Multiset ℕ
   sums                : odd_parts.sum = n
   odd                 : ∀ x ∈ odd_parts, x % 2 = 1
@@ -127,6 +128,7 @@ def OddToDistinct (n : ℕ) : OP n → DistinctPartition n:= by
       -- intro c1 c2 c3
       by_contra! contr
       rcases contr with ⟨c1,c2 ,c3,c4⟩
+
       have b1: ∀ n ∈ c1, n % h1 = 0 ∧ n % h3 ≠ 0:=by
         exact a1
           (x:=n)
@@ -137,18 +139,20 @@ def OddToDistinct (n : ℕ) : OP n → DistinctPartition n:= by
           (x:=n)
           (ms:=c1)
           (hms:=c3)
-      have b3: ∃ n∈ c1, n % h1 = 0 ∧ n % h1 ≠ 0 := by
-        -- intro a b
-        -- exact ⟨(b1 a b).left , (b2 a b).right⟩
-      exact b3
+      have b3: ∀ n∈ c1, n % h1 = 0 ∧ n % h1 ≠ 0 := by
+        -- ∀ n ∈ c1 proof:
+        intro a b
+        exact ⟨(b1 a b).left , (b2 a b).right⟩
+        --sorry
+      intro h1 h2 h3 at c4
+      exact (b3 c4).1 (b3 a b).2
 
 
-
-
-
-
-
-
+      -- have b4: (n % h1 ≠ 0) = ¬(n % h1 = 0) := by
+      --   simp
+      -- have b5: ∃ n∈ c1, n % h1 = 0 ∧ n % h1 ≠ 0:=by
+      --   -- constructor
+      --   sorry
       --tryin gto prove {3,6} and {5} are pairwise disjoint
       --remember its the largest odd factor is different
       --in terms of math

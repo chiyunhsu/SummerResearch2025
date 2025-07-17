@@ -28,7 +28,8 @@ decreasing_by
     (c:=2)
     (h_lt_1:= p)
     (h_le:=r)
-
+def com_hof(n:ℕ):=
+  c * highest_odd_factor n = n
 --hof of ALL the image
   --they come from different odd numbers they haveto be different
   --to show distince look at intersection and get contradiviton
@@ -121,19 +122,6 @@ lemma binary_no_duplicate(n:ℕ): (binary2 n).Nodup:= by
     constructor
     · -- p ∉ binary2 m
       intro h_mem
-<<<<<<< HEAD
-      -- Powers of 2 in binary representation are unique
-      have h_pow_unique : ∀ x ∈ binary2 m, x < p := by
-        intro x hx
-        -- Each element in binary2 m corresponds to a power of 2 less than p
-        have h_bound : binary2 m = binary2 ((n + 1) - p) := by rfl
-        -- Since m < n + 1 and p = 2^k where k = log2(n+1),
-        -- all powers in binary2 m are < p
-        sorry -- This requires more detailed analysis of binary representation
-      exact lt_irrefl p ((h_pow_unique p h_mem))
-    · exact ih_m
-
-=======
       have h_pow_unique : ∀ x ∈ binary2 m, x < p := by
         intro x hx
         -- Each element in binary2 m corresponds
@@ -184,7 +172,6 @@ lemma binary_no_duplicate(n:ℕ): (binary2 n).Nodup:= by
 
 
 
->>>>>>> 654c89d (during 7/17meeting)
 
 --natural number include 0 but we don't need natural number for
 --partitions just positive integers need to fix later
@@ -192,10 +179,7 @@ lemma nd_time_const_nd(n:ℕ) (ms: Multiset ℕ)(hnd:ms.Nodup):
   (ms.map fun x ↦ x * n).Nodup:=by
   sorry
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 654c89d (during 7/17meeting)
 lemma finset_nsmul_eq_mul (s : Multiset ℕ) :
     ∑ x ∈ s.toFinset, (s.count x) * x =
     ∑ x ∈ s.toFinset, (s.count x) • x:= by
@@ -204,7 +188,7 @@ lemma finset_nsmul_eq_mul (s : Multiset ℕ) :
 lemma count_sum (s : Multiset ℕ) :
     ∑ x ∈ s.toFinset, (s.count x) * x = s.sum:= by
     rw [finset_nsmul_eq_mul]
-    rw[ ←Finset.sum_multiset_map_count]
+    rw [←Finset.sum_multiset_map_count]
     simp
 lemma fsnp_listnp(fs: Finset ℕ): fs.val.toList.Nodup := by
   sorry
@@ -329,3 +313,9 @@ def OddToDistinct (n : ℕ) : OP n → DistinctPartition n:= by
   --remember its the largest odd factor is different in terms of math
   --dop.map -> {},{},{}
   --dop.bind ->{a.b.,d,d,ae}
+
+def DistinctToOdd (n : ℕ) : DistinctPartition n → OP n:= by
+  intro dp
+  let odd := (dp.dis_parts).bind fun y ↦
+   (binary2 ((highest_odd_factor y)/y)).map (fun z ↦ z * highest_odd_factor y)
+  sorry

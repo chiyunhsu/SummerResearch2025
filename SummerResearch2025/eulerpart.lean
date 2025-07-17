@@ -53,17 +53,48 @@ lemma binary2_sum_to_n(n:ℕ): (binary2 n).sum = n := by
 
   --use induction add one to the multiset
 lemma binary_no_duplicate(n:ℕ): (binary2 n).Nodup:= by
-  sorry
+  induction' n using Nat.strong_induction_on with n1 ih
+  cases n1 with
+  | zero => simp [binary2]
+  | succ n =>
+    let k := Nat.log2 (n + 1)
+    let p := 2 ^ k
+    have hp_le : p ≤ n + 1 := by
+      dsimp[p,k]
+      rw[Nat.log2_eq_log_two]
+      have temp: n+1 ≠0:= by simp
+      exact Nat.pow_log_le_self (b:=2) (x:= n+1) (hx:= temp)
+    let m := n + 1 - p
+    have h_m_lt: m < n + 1 := by
+      apply Nat.sub_lt (Nat.succ_pos n)
+      apply Nat.pow_pos
+      exact Nat.zero_lt_two
+    have ih_m := ih m h_m_lt
+    unfold binary2
+    simp only[Nat.add_sub_cancel' hp_le]
+    apply Multiset.nodup_cons.2
+    constructor
+    · -- p ∉ binary2 m
+      intro h_mem
+      -- Powers of 2 in binary representation are unique
+      have h_pow_unique : ∀ x ∈ binary2 m, x < p := by
+        intro x hx
+        -- Each element in binary2 m corresponds to a power of 2 less than p
+        have h_bound : binary2 m = binary2 ((n + 1) - p) := by rfl
+        -- Since m < n + 1 and p = 2^k where k = log2(n+1),
+        -- all powers in binary2 m are < p
+        sorry -- This requires more detailed analysis of binary representation
+      exact lt_irrefl p ((h_pow_unique p h_mem))
+    · exact ih_m
+
 
 --natural number include 0 but we don't need natural number for
 --partitions just positive integers need to fix later
 lemma nd_time_const_nd(n:ℕ) (ms: Multiset ℕ)(hnd:ms.Nodup):
   (ms.map fun x ↦ x * n).Nodup:=by
   sorry
-lemma const_time_2nondp_nd(n1:ℕ) (n2:ℕ)(hne:n1≠n2)
-        (ms: Multiset ℕ)(hnd:ms.Nodup):
-  Disjoint (ms.map fun x ↦ x * n1) (ms.map fun x ↦ x * n2):=by
-  sorry
+
+
 lemma finset_nsmul_eq_mul (s : Multiset ℕ) :
     ∑ x ∈ s.toFinset, (s.count x) * x =
     ∑ x ∈ s.toFinset, (s.count x) • x:= by
@@ -74,7 +105,7 @@ lemma count_sum (s : Multiset ℕ) :
     rw [finset_nsmul_eq_mul]
     rw[ ←Finset.sum_multiset_map_count]
     simp
-lemma fsnp_listnp(fs: Finset N): (fs.val.toList.Nodup):=by
+lemma fsnp_listnp(fs: Finset ℕ): fs.val.toList.Nodup := by
   sorry
 
 

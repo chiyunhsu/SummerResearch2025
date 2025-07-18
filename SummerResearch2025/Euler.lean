@@ -1,7 +1,11 @@
+import Mathlib
+/-
 import Mathlib.Combinatorics.Enumerative.Partition
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Nat.Digits
 import Mathlib.Data.Multiset.Count
+import Mathlib.Data.Nat.Bitindices
+-/
 
 variable (n : ℕ)
 
@@ -20,70 +24,45 @@ variable (P : n.Partition)
 #check P.parts_pos
 #check P.parts_sum
 
-variable (a : ℕ) (h : a ∈ P.parts)
-def da : List ℕ := digits 2 a
+#check Multiset.toFinset_sum_count_nsmul_eq
 
+variable (a : ℕ) (h : a ∈ P.parts)
 -- α, β are both the type n.Partition
 -- s is the set of odd partitions of n
 -- t is the set of distinct partitions of n
 
-def Fun : ℕ → ℕ :=
-  fun n =>
-    let m := 0
-    m + n
-#eval Fun 5
+def binary (n : ℕ): Multiset ℕ := n.bitIndices.map fun i => 2 ^ i
 
-def Fun2 : ℕ → ℕ :=
-  fun n =>
-    (List.range n).foldl (fun m i => m + i) 0
-/-
-def Fun3 : ℕ → ℕ :=
-  fun n =>
-    let m := 0
-    for i in [0:n] do
-      m := m + i
-    m
--/
+def FromOdd (n : ℕ) : ∀ P ∈ (odds n), Multiset ℕ :=
+  fun P hP => ∑ a ∈ P.parts.toFinset, (binary (Multiset.count a P.parts)).map (fun y ↦ a * y)
 
-def oddtodistinct : ∀ P ∈ (odds n), n.Partition :=
-  fun P hP => let Q := Multiset.empty ℕ
-    for a ∈ Multiset.toFinset P.parts do
-      let MultOfa := (Multiset.count a P.parts)
-      let BinaryMultOfa := digits 2 MultOfa
-      let Length := BinaryMultOfa.length
-      for i in [0:Length] do
-        Q = Q + a * 2^i * BinaryMultOfa[i]
-    ofMultiset Q
+lemma mul_comm_sum (s : Multiset ℕ) (a : ℕ) : (Multiset.map (fun x ↦ a * x) s).sum = a * s.sum := by
+  rw [Multiset.sum_map_mul_left]
+  simp
 
-/-
-def oddtodistinct : ∀ P ∈ (odds n), n.Partition :=
-  fun P hP => let Q := Multiset.empty ℕ
-    for a ∈ Multiset.toFinset P.parts do
-      let MultOfa := (Multiset.count a P.parts)
-      let BinaryMultOfa := digits 2 MultOfa
-      let Length := BinaryMultOfa.length
-      for i in [0:Length] do
-        Q = Q + a * 2^i * BinaryMultOfa[i]
-    ofMultiset Q
--/
+lemma lemma3 (n : ℕ) (P : n.Partition) : n = ∑ a ∈ P.parts.toFinset, a * (P.parts.count a) := by
+  sorry
 
--- MultOfa := (Multiset.count a P.parts) is the number of a in P.parts
--- BinaryMultOfa := digits 2 Ma is the binary representation of the count. It is a list.
--- Want to create a multiset consisting of a*2^i*BinaryMulOfa[i]
--- Then use ofMultiset to create a partition from the multiset
-#eval digits 2 4
+lemma FromOddisPartition (n : ℕ) (P : n.Partition) (hP : P ∈ (odds n)) :
+  (FromOdd n P hP).sum = n := by
+  nth_rewrite 2 [lemma3 n P]
+  unfold FromOdd
+  rw [Multiset.sum_sum]
+  congr
+  ext
+  rw [mul_comm_sum]
+  unfold binary
+  congr
+  rw [Multiset.sum_coe]
+  rw [twoPowSum_bitIndices]
+
+
+#check Multiset.sum_join
+#check twoPowSum_bitIndices
+--(List.map (fun i => 2 ^ i) n.bitIndices).sum = n
+
+#check ofSums
 #check ofMultiset
 #check (Multiset.count 1 P.parts)
 #check Multiset
 #check Multiset.toFinset
-
-def AddaToMultiset (a : ℕ) (BinaryMultOfa : List ℕ) (M : Multiset ℕ): Multiset ℕ :=
-  entries.foldl (fun acc (n, k) => addMultiplicity acc n k) ∅
-
-
-#check oddtodistinct
-
-
-
-
-theorem Bijection :

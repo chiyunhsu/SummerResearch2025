@@ -178,6 +178,72 @@ def distincts (n : ℕ) : Finset (Partition n) :=
 def oddDistincts (n : ℕ) : Finset (Partition n) :=
   odds n ∩ distincts n
 
+
+def highest_odd_factor : ℕ → ℕ
+| 0       => 0
+| n@(k+1) =>
+  if n % 2 = 1 then n
+  else highest_odd_factor (n / 2)
+lemma non_0_hof_non_0(n:ℕ)(hn0:0<n):0< highest_odd_factor n :=by
+  sorry
+lemma hof_le_itself (n:ℕ): n ≥ highest_odd_factor n :=by
+  sorry
+#eval Multiset.ofList (List.replicate (60/(highest_odd_factor 60)) (highest_odd_factor 60))
+
+def dto(n:ℕ): distincts n → odds n:=by
+
+  intro distinct
+
+  rcases distinct with ⟨p,p_distinct⟩
+
+  let odd := (p.parts).bind fun y ↦
+  Multiset.ofList (List.replicate
+          (y/(highest_odd_factor y)) (highest_odd_factor y))
+
+  -- simp[odds]
+  -- unfold odds
+  refine{
+    val:=by
+      refine{
+        parts:=by
+          exact odd
+        parts_pos:=by
+          intro all pos
+          have all_dis_part_hof_non_0: ∀ y ∈ p.parts, 0< highest_odd_factor y:=by
+            intro y hy
+            have y_non_0: 0<y := by
+              apply p.parts_pos hy
+            exact non_0_hof_non_0 (n:=y) (hn0:=y_non_0)
+          have y_over_hof_y_non_zero: ∀ y ∈ p.parts, (y / (highest_odd_factor y)) ≠ 0:=by
+            intro y hy
+            apply Nat.div_eq_zero_iff.not.symm.1
+            simp
+            have y_non_0: 0<y := by
+              apply p.parts_pos hy
+            constructor
+            apply (Nat.pos_iff_ne_zero).1
+            apply non_0_hof_non_0 (n:=y) (hn0:=y_non_0)
+            exact hof_le_itself (n:= y)
+
+          have all_eq_y_div_hofy: ∃ y ∈ p.parts, y /highest_odd_factor y = all :=by
+
+            refine ⟨?witness, ?goal⟩
+          sorry
+        parts_sum:=by sorry
+      }
+    property := by
+      sorry
+  }
+
+def otd(n:ℕ): distincts n → odds n:=by
+  sorry
+
+
 end Partition
 
 end Nat
+
+variable {n : ℕ} {σ τ : Type*} [DecidableEq σ] [DecidableEq τ]
+
+def dto {Partition}(n:ℕ)(p: Partition n):true:= by
+  sorry

@@ -12,26 +12,26 @@ def highest_odd_factor : ℕ → ℕ
 | n@(k+1) =>
   if n % 2 = 1 then n
   else highest_odd_factor (n / 2)
-termination_by n => n
-decreasing_by
-  simp_wf
-  rename_i h1 h2
-  rw[h1]
-  let a := k+1
-  have p: 2 > 1 := by
-    simp
-  have r: a≤ a :=by
-    rfl
-  exact lt_div
-    (a:=a)
-    (b:=a)
-    (c:=2)
-    (h_lt_1:= p)
-    (h_le:=r)
-def com_hof(n:ℕ):=
-  c * highest_odd_factor n = n
+
+-- termination_by n => n
+-- decreasing_by
+--   simp_wf
+--   rename_i h1 h2
+--   rw[h1]
+--   let a := k+1
+--   have p: 2 > 1 := by
+--     simp
+--   have r: a≤ a :=by
+--     rfl
+--   exact lt_div
+--     (a:=a)
+--     (b:=a)
+--     (c:=2)
+--     (h_lt_1:= p)
+--     (h_le:=r)
+
 --hof of ALL the image
-  --they come from different odd numbers they haveto be different
+  --they come from different odd numbers they have to be different
   --to show distince look at intersection and get contradiviton
 
 -- lemma distinct_hof (n1:ℕ)(hoodd1:n1%2 = 1)(n2:ℕ)(hoodd2:n2%2 = 1)
@@ -238,23 +238,17 @@ def OddToDistinct (n : ℕ) : OP n → DistinctPartition n:= by
 
       intro h1 h2 h3 h4 h5
       dsimp[Function.onFun]
-      dsimp[Disjoint]
-      --its not symmetric anymore, two images are divisible
-      --by the different largest odd factor
-      --need to have completly new different lemma
-      --take the biggest odd factor of image of h1 and h3
-      --if there exists a image not divisible by bof then im. disjoint
-      --we canalways fnd existence of bof that suffice the above
-      --condition because h1 != h3 -> h1 >h3 or h3 >h1
-      --biggest odd factor will be
-      --still break symmetry with the b.o.f. thought
-      --the bigger one of h1 and h3 could still divide
-      --both the b.o.f.
 
-      --or we can look at for all elements in the smaller
-      --of h1 and h3's image, it des not divide the bigger
-      --not looking at divisibility but just all the
-      --elements in the image having different bof
+      dsimp[Disjoint]
+
+      -- let f : ℕ → Multiset ℕ :=
+      --   fun y ↦ (binary2 (h.odd_parts.count y)).map (fun z ↦ z * y)
+      have hof_same_one_image: ∀ x ∈ f h1, highest_odd_factor x = h1:=by
+        intro a b
+        let c := f a
+        unfold highest_odd_factor
+
+
       have temp: ∀ x∈ f h1,
       highest_odd_factor x = highest_odd_factor h1:=by
         sorry
@@ -300,6 +294,24 @@ def OddToDistinct (n : ℕ) : OP n → DistinctPartition n:= by
       --tryin gto prove {3,6} and {5} are pairwise disjoint
       --remember its the largest odd factor is different
       --in terms of math
+
+      --its not symmetric anymore, two images are divisible
+      --by the different largest odd factor
+      --need to have completly new different lemma
+      --no
+      --take the biggest odd factor of image of h1 and h3
+      --if there exists a image not divisible by bof then im. disjoint
+      --we canalways fnd existence of bof that suffice the above
+      --condition because h1 != h3 -> h1 >h3 or h3 >h1
+      --biggest odd factor will be
+      --still break symmetry with the b.o.f. thought
+      --the bigger one of h1 and h3 could still divide
+      --both the b.o.f.
+
+      --or we can look at for all elements in the smaller
+      --of h1 and h3's image, it des not divide the bigger
+      --not looking at divisibility but just all the
+      --elements in the image having different bof
   }
 
   -- oddpartition
@@ -313,9 +325,40 @@ def OddToDistinct (n : ℕ) : OP n → DistinctPartition n:= by
   --remember its the largest odd factor is different in terms of math
   --dop.map -> {},{},{}
   --dop.bind ->{a.b.,d,d,ae}
+#eval 30/(highest_odd_factor 30)
+#eval (List.replicate (30/(highest_odd_factor 30)) (highest_odd_factor 30))
+#eval Multiset.ofList (List.replicate (30/(highest_odd_factor 30)) (highest_odd_factor 30))
 
 def DistinctToOdd (n : ℕ) : DistinctPartition n → OP n:= by
   intro dp
   let odd := (dp.dis_parts).bind fun y ↦
-   (binary2 ((highest_odd_factor y)/y)).map (fun z ↦ z * highest_odd_factor y)
-  sorry
+  Multiset.ofList (List.replicate
+          (y/(highest_odd_factor y)) (highest_odd_factor y))
+  refine{
+    odd_parts:= odd
+    sums := by
+      simp[odd]
+      have nonzero_hof(x:ℕ):highest_odd_factor x ≠ 0:=by sorry
+      have temp(x:ℕ): x / highest_odd_factor x * highest_odd_factor x = x:=by sorry
+      simp[temp]
+      exact dp.sums
+    odd := by
+
+      -- intro a b
+      -- simp[odd] at b
+      -- rcases b with ⟨b,hb⟩
+      -- have b_odd: b%2 = 1:=by
+      --   unfold highest_odd_factor at hb
+      --   rw[hb.right.left.left]
+
+
+    distinct_odd_parts := by sorry
+    dop_def := by sorry
+
+  }
+  -- simp[dis_parts]
+  --     simp[Multiset.sum_map_mul_right]
+  --     simp[binary2_sum_to_n]
+  --     simp[←h.sums]
+  --     simp[←count_sum]
+  --     rw[h.dop_def]

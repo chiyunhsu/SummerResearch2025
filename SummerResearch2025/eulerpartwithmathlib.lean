@@ -178,16 +178,37 @@ def distincts (n : ℕ) : Finset (Partition n) :=
 def oddDistincts (n : ℕ) : Finset (Partition n) :=
   odds n ∩ distincts n
 
+lemma lt_div(a:ℕ)(b:ℕ)(c:ℕ)(h_le:a ≤ b)(h_lt_1: c > 1):(a / c) < b:=by
+  simp?
 
 def highest_odd_factor : ℕ → ℕ
 | 0       => 0
 | n@(k+1) =>
   if n % 2 = 1 then n
   else highest_odd_factor (n / 2)
+-- termination_by n => n
+-- decreasing_by
+--   simp_wf
+--   rename_i h1 h2
+--   rw[h1]
+--   let a := k+1
+--   have p: 2 > 1 := by
+--     simp
+--   have r: a≤ a :=by
+--     rfl
+--   exact lt_div
+--     (a:=a)
+--     (b:=a)
+--     (c:=2)
+--     (h_lt_1:= p)
+--     (h_le:=r)
 lemma non_0_hof_non_0(n:ℕ)(hn0:0<n):0< highest_odd_factor n :=by
   sorry
 lemma hof_le_itself (n:ℕ): n ≥ highest_odd_factor n :=by
   sorry
+lemma hof_divides (n:ℕ): highest_odd_factor n ∣ n:= by
+  sorry
+
 #eval Multiset.ofList (List.replicate (60/(highest_odd_factor 60)) (highest_odd_factor 60))
 
 def dto(n:ℕ): distincts n → odds n:=by
@@ -199,9 +220,6 @@ def dto(n:ℕ): distincts n → odds n:=by
   let odd := (p.parts).bind fun y ↦
   Multiset.ofList (List.replicate
           (y/(highest_odd_factor y)) (highest_odd_factor y))
-
-  -- simp[odds]
-  -- unfold odds
   refine{
     val:=by
       refine{
@@ -209,30 +227,62 @@ def dto(n:ℕ): distincts n → odds n:=by
           exact odd
         parts_pos:=by
           intro all pos
-          have all_dis_part_hof_non_0: ∀ y ∈ p.parts, 0< highest_odd_factor y:=by
-            intro y hy
-            have y_non_0: 0<y := by
-              apply p.parts_pos hy
-            exact non_0_hof_non_0 (n:=y) (hn0:=y_non_0)
-          have y_over_hof_y_non_zero: ∀ y ∈ p.parts, (y / (highest_odd_factor y)) ≠ 0:=by
-            intro y hy
-            apply Nat.div_eq_zero_iff.not.symm.1
-            simp
-            have y_non_0: 0<y := by
-              apply p.parts_pos hy
-            constructor
-            apply (Nat.pos_iff_ne_zero).1
-            apply non_0_hof_non_0 (n:=y) (hn0:=y_non_0)
-            exact hof_le_itself (n:= y)
+          unfold odd at pos
+          simp at pos
+          rcases pos with ⟨w,h⟩
+          apply Nat.pos_iff_ne_zero.2
+          #check h.2.1.1
+          #check h.2.2
+          rw[h.2.2]
+          exact h.2.1.1
+        parts_sum:=by
+          unfold odd
+          simp
+          have temp2: ∀ x ∈ p.parts, x / highest_odd_factor x * highest_odd_factor x = x:=by
+            intro x hx
+            have temp := by
+              exact hof_divides x
+            exact Nat.div_mul_cancel temp
+          have map_simp : p.parts.map (fun x => x / highest_odd_factor x * highest_odd_factor x) = p.parts.map (fun x => x) := by
+            apply Multiset.map_congr
+            rfl
+            exact temp2
+          rw[map_simp]
+          simp
+          exact p.parts_sum
 
-          have all_eq_y_div_hofy: ∃ y ∈ p.parts, y /highest_odd_factor y = all :=by
-
-            refine ⟨?witness, ?goal⟩
-          sorry
-        parts_sum:=by sorry
       }
+      --  Finset.univ.filter fun c => c.parts.Nodup
+
     property := by
-      sorry
+      trace_state
+      unfold odds
+      simp
+      unfold odd Odd
+      simp
+      intro n1 n2 hmem hn2non0 hn2rfl hn2eqn1
+      rw[hn2eqn1]
+      constructor
+      unfold highest_odd_factor
+
+      -- induction' n with n ih
+      -- cases n with
+      -- | zero =>
+      --   cases hn2non0
+      -- | succ n =>
+      --   sorry
+      induction n2 with
+      | zero =>
+        simp[highest_odd_factor]
+        apply hn2non0
+        simp[highest_odd_factor]
+      | succ n ih =>
+      simp
+
+
+
+
+
   }
 
 def otd(n:ℕ): distincts n → odds n:=by

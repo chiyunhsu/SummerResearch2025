@@ -34,7 +34,7 @@ variable (a : ℕ) (h : a ∈ P.parts)
 def binary (n : ℕ): Multiset ℕ := n.bitIndices.map fun i => 2 ^ i
 
 def FromOdd (n : ℕ) : ∀ P ∈ (odds n), Multiset ℕ :=
-  fun P hP => ∑ a ∈ P.parts.toFinset, (binary (Multiset.count a P.parts)).map (fun y ↦ a * y)
+  fun P _ => ∑ a ∈ P.parts.toFinset, (binary (Multiset.count a P.parts)).map (fun y ↦ a * y)
 
 lemma mul_comm_sum (s : Multiset ℕ) (a : ℕ) : (Multiset.map (fun x ↦ a * x) s).sum = a * s.sum := by
   rw [Multiset.sum_map_mul_left]

@@ -1,6 +1,49 @@
 import mathlib
 import Mathlib.Data.Multiset.Basic
+--todo:
+--distinct to odd
+--bijective map on finite sets give smae carindanity
 
+lemma lt_div(a:ℕ)(b:ℕ)(c:ℕ)(h_le:a ≤ b)(h_lt_1: c > 1):(a / c) < b:=by
+  sorry
+@[simp]
+def highest_odd_factor : ℕ → ℕ
+| 0       => 0
+| n@(k+1) =>
+  if n % 2 = 1 then n
+  else highest_odd_factor (n / 2)
+
+-- termination_by n => n
+-- decreasing_by
+--   simp_wf
+--   rename_i h1 h2
+--   rw[h1]
+--   let a := k+1
+--   have p: 2 > 1 := by
+--     simp
+--   have r: a≤ a :=by
+--     rfl
+--   exact lt_div
+--     (a:=a)
+--     (b:=a)
+--     (c:=2)
+--     (h_lt_1:= p)
+--     (h_le:=r)
+
+--hof of ALL the image
+  --they come from different odd numbers they have to be different
+  --to show distince look at intersection and get contradiviton
+
+-- lemma distinct_hof (n1:ℕ)(hoodd1:n1%2 = 1)(n2:ℕ)(hoodd2:n2%2 = 1)
+-- (hne:n1 ≠ n2): highest_odd_factor n1 ≠ highest_odd_factor n2:=by
+--   unfold highest_odd_factor
+
+
+
+
+
+#eval highest_odd_factor 16
+#eval highest_odd_factor 8
 structure partition{n:ℕ} where
   parts     : Multiset ℕ
   sums      : parts.sum = n
@@ -21,11 +64,14 @@ def binary2: ℕ → Multiset Nat
   let k := Nat.log2 (m+1)
   let p := 2 ^ k
   p ::ₘ binary2 ((m+1)-p)
-
+#eval binary2 1023
+#eval Nat.log2 1023
+#eval 1023 - 2 ^ 9
 lemma binary2_sum_to_n(n:ℕ): (binary2 n).sum = n := by
   induction' n using Nat.strong_induction_on with n1 ih
   cases n1 with
-  | zero => simp [binary2]
+  | zero =>
+    simp[binary2]
   | succ n =>
     let k := Nat.log2 (n + 1)
     let p := 2 ^ k
@@ -50,20 +96,90 @@ lemma binary2_sum_to_n(n:ℕ): (binary2 n).sum = n := by
     rw[ih_m]
     rw [Nat.add_sub_cancel' hp_le]
 
-
-  --use induction add one to the multiset
+#eval binary2 0
+#eval Nat.log2 6
 lemma binary_no_duplicate(n:ℕ): (binary2 n).Nodup:= by
-  sorry
+  induction' n using Nat.strong_induction_on with n1 ih
+  cases n1 with
+  | zero => simp [binary2]
+  | succ n =>
+    let k := Nat.log2 (n + 1)
+    let p := 2 ^ k
+    have hp_le : p ≤ n + 1 := by
+      dsimp[p,k]
+      rw[Nat.log2_eq_log_two]
+      have temp: n+1 ≠0:= by simp
+      exact Nat.pow_log_le_self (b:=2) (x:= n+1) (hx:= temp)
+    let m := n + 1 - p
+    have h_m_lt: m < n + 1 := by
+      apply Nat.sub_lt (Nat.succ_pos n)
+      apply Nat.pow_pos
+      exact Nat.zero_lt_two
+    have ih_m := ih m h_m_lt
+    unfold binary2
+    simp only[Nat.add_sub_cancel' hp_le]
+    apply Multiset.nodup_cons.2
+    constructor
+    · -- p ∉ binary2 m
+      intro h_mem
+      have h_pow_unique : ∀ x ∈ binary2 m, x < p := by
+        intro x hx
+        -- Each element in binary2 m corresponds
+        -- to a power of 2 less than p
+        have h_bound : binary2 m = binary2 ((n + 1) - p) := by rfl
+
+        -- Since m < n + 1 and p = 2^k where k = log2(n+1),
+        -- all powers in binary2 m are < p
+
+        -- have x ≤ p:=by
+        --   sorry
+        -- by_contra!
+
+        sorry -- This requires more detailed analysis of binary representation
+
+      exact lt_irrefl p ((h_pow_unique p h_mem))
+    · exact ih_m
+
+
+  --   intro x hx
+  --   -- Each element in binary2 m corresponds to a power of 2 less than p
+  --   have h_bound : binary2 m = binary2 ((n + 1) - p) := by rfl
+  --   -- Since m < n + 1 and p = 2^k where k = log2(n+1),
+  --   -- all powers in binary2 m are < p
+  --   sorry -- This requires more detailed analysis of binary representation
+  -- exact lt_irrefl p ((h_pow_unique p h_mem))
+--use induction add one to the multiset
+lemma binary_no_duplicate(n:ℕ): (binary2 n).Nodup:= by
+  induction n with
+  | zero =>
+      sorry
+  | succ n ih =>
+      let k := Nat.log2 (n + 1)
+      let p := 2 ^ k
+      let m := n + 1 - p
+      simp[binary2]
+      constructor
+      ·have temp': p ≤ n + 1:=by
+        dsimp[p,k]
+        rw[ Nat.log2_eq_log_two]
+        have temp: n+1 ≠0:=by
+          simp
+        exact Nat.pow_log_le_self
+          (b:=2)
+          (x:=n+1)
+          (hx:=temp)
+      rcases temp' with a | b
+
+
+
 
 --natural number include 0 but we don't need natural number for
 --partitions just positive integers need to fix later
 lemma nd_time_const_nd(n:ℕ) (ms: Multiset ℕ)(hnd:ms.Nodup):
   (ms.map fun x ↦ x * n).Nodup:=by
   sorry
-lemma const_time_2nondp_nd(n1:ℕ) (n2:ℕ)(hne:n1≠n2)
-        (ms: Multiset ℕ)(hnd:ms.Nodup):
-  Disjoint (ms.map fun x ↦ x * n1) (ms.map fun x ↦ x * n2):=by
-  sorry
+
+
 lemma finset_nsmul_eq_mul (s : Multiset ℕ) :
     ∑ x ∈ s.toFinset, (s.count x) * x =
     ∑ x ∈ s.toFinset, (s.count x) • x:= by
@@ -72,9 +188,9 @@ lemma finset_nsmul_eq_mul (s : Multiset ℕ) :
 lemma count_sum (s : Multiset ℕ) :
     ∑ x ∈ s.toFinset, (s.count x) * x = s.sum:= by
     rw [finset_nsmul_eq_mul]
-    rw[ ←Finset.sum_multiset_map_count]
+    rw [←Finset.sum_multiset_map_count]
     simp
-lemma fsnp_listnp(fs: Finset N): (fs.val.toList.Nodup):=by
+lemma fsnp_listnp(fs: Finset ℕ): fs.val.toList.Nodup := by
   sorry
 
 
@@ -100,6 +216,7 @@ def OddToDistinct (n : ℕ) : OP n → DistinctPartition n:= by
         (n:=a)
         (ms:=(binary2 (Multiset.count a h.odd_parts)))
         (hnd:= binary_no_duplicate (Multiset.count a h.odd_parts))
+      --all's cases proof finished
 
       dsimp[Multiset.Pairwise]
       refine ⟨?a, ?b⟩
@@ -108,6 +225,7 @@ def OddToDistinct (n : ℕ) : OP n → DistinctPartition n:= by
       have aa: h.distinct_odd_parts.val.toList.Nodup:=by
         exact fsnp_listnp
           (fs:=h.distinct_odd_parts)
+
       let f : ℕ → Multiset ℕ :=
         fun y ↦ (binary2 (h.odd_parts.count y)).map (fun z ↦ z * y)
 
@@ -117,35 +235,55 @@ def OddToDistinct (n : ℕ) : OP n → DistinctPartition n:= by
         (hn:= aa)
       ).1
       simp
+
       intro h1 h2 h3 h4 h5
       dsimp[Function.onFun]
+
       dsimp[Disjoint]
 
-      have a1(x: ℕ)(ms:Multiset ℕ)(hms:ms ≤ f h1):∀ x ∈ ms, x % h1 = 0 ∧ x % h3 ≠ 0 :=by
-        sorry
-      have a2(x: ℕ)(ms:Multiset ℕ)(hms:ms ≤ f h3):∀ x ∈ ms , x % h3 = 0 ∧ x % h1 ≠ 0:=by
-        sorry
-      -- intro c1 c2 c3
-      by_contra! contr
-      rcases contr with ⟨c1,c2 ,c3,c4⟩
-
-      have b1: ∀ n ∈ c1, n % h1 = 0 ∧ n % h3 ≠ 0:=by
-        exact a1
-          (x:=n)
-          (ms:=c1)
-          (hms:=c2)
-      have b2: ∀ n ∈ c1, n % h3 = 0 ∧ n % h1 ≠ 0:=by
-        exact a2
-          (x:=n)
-          (ms:=c1)
-          (hms:=c3)
-      have b3: ∀ n∈ c1, n % h1 = 0 ∧ n % h1 ≠ 0 := by
-        -- ∀ n ∈ c1 proof:
+      -- let f : ℕ → Multiset ℕ :=
+      --   fun y ↦ (binary2 (h.odd_parts.count y)).map (fun z ↦ z * y)
+      have hof_same_one_image: ∀ x ∈ f h1, highest_odd_factor x = h1:=by
         intro a b
-        exact ⟨(b1 a b).left , (b2 a b).right⟩
-        --sorry
-      intro h1 h2 h3 at c4
-      exact (b3 c4).1 (b3 a b).2
+        let c := f a
+        unfold highest_odd_factor
+
+
+      have temp: ∀ x∈ f h1,
+      highest_odd_factor x = highest_odd_factor h1:=by
+        sorry
+      have temp2: ∀ x∈ f h3,
+      highest_odd_factor x = highest_odd_factor h3:=by
+        sorry
+
+      -- have a1(x: ℕ)(ms:Multiset ℕ)(hms:ms ≤ f h1):
+      -- ∀ x ∈ ms, x % highest_odd_factor h1 = 0 ∧ x % h3 ≠ 0 :=by
+      --   sorry
+      -- have a2(x: ℕ)(ms:Multiset ℕ)(hms:ms ≤ f h3):
+      -- ∀ x ∈ ms , x % h3 = 0 ∧ x % h1 ≠ 0:=by
+      --   sorry
+      -- -- intro c1 c2 c3
+
+      -- by_contra! contr
+      -- rcases contr with ⟨c1,c2 ,c3,c4⟩
+
+      -- have b1: ∀ n ∈ c1, n % h1 = 0 ∧ n % h3 ≠ 0:=by
+      --   exact a1
+      --     (x:=n)
+      --     (ms:=c1)
+      --     (hms:=c2)
+      -- have b2: ∀ n ∈ c1, n % h3 = 0 ∧ n % h1 ≠ 0:=by
+      --   exact a2
+      --     (x:=n)
+      --     (ms:=c1)
+      --     (hms:=c3)
+      -- have b3: ∀ n∈ c1, n % h1 = 0 ∧ n % h1 ≠ 0 := by
+      --   -- ∀ n ∈ c1 proof:
+      --   intro a b
+      --   exact ⟨(b1 a b).left , (b2 a b).right⟩
+      --   --sorry
+      -- intro hh1 hh2 hh3 at c4
+      -- exact (b3 c4).1 (b3 a b).2
 
 
       -- have b4: (n % h1 ≠ 0) = ¬(n % h1 = 0) := by
@@ -156,6 +294,24 @@ def OddToDistinct (n : ℕ) : OP n → DistinctPartition n:= by
       --tryin gto prove {3,6} and {5} are pairwise disjoint
       --remember its the largest odd factor is different
       --in terms of math
+
+      --its not symmetric anymore, two images are divisible
+      --by the different largest odd factor
+      --need to have completly new different lemma
+      --no
+      --take the biggest odd factor of image of h1 and h3
+      --if there exists a image not divisible by bof then im. disjoint
+      --we canalways fnd existence of bof that suffice the above
+      --condition because h1 != h3 -> h1 >h3 or h3 >h1
+      --biggest odd factor will be
+      --still break symmetry with the b.o.f. thought
+      --the bigger one of h1 and h3 could still divide
+      --both the b.o.f.
+
+      --or we can look at for all elements in the smaller
+      --of h1 and h3's image, it des not divide the bigger
+      --not looking at divisibility but just all the
+      --elements in the image having different bof
   }
 
   -- oddpartition
@@ -163,6 +319,46 @@ def OddToDistinct (n : ℕ) : OP n → DistinctPartition n:= by
   -- dop:{1,3,5}
   -- 3 -> 3 * 3 -> 3* {2^1,2^0} ->{6,3}
   --5 ->...{10}
+  --hof of ALL the image
+  --they come from different odd numbers they haveto be different
+  --to show distince look at intersection and get contradiviton
   --remember its the largest odd factor is different in terms of math
   --dop.map -> {},{},{}
   --dop.bind ->{a.b.,d,d,ae}
+#eval 30/(highest_odd_factor 30)
+#eval (List.replicate (30/(highest_odd_factor 30)) (highest_odd_factor 30))
+#eval Multiset.ofList (List.replicate (30/(highest_odd_factor 30)) (highest_odd_factor 30))
+
+def DistinctToOdd (n : ℕ) : DistinctPartition n → OP n:= by
+  intro dp
+  let odd := (dp.dis_parts).bind fun y ↦
+  Multiset.ofList (List.replicate
+          (y/(highest_odd_factor y)) (highest_odd_factor y))
+  refine{
+    odd_parts:= odd
+    sums := by
+      simp[odd]
+      have nonzero_hof(x:ℕ):highest_odd_factor x ≠ 0:=by sorry
+      have temp(x:ℕ): x / highest_odd_factor x * highest_odd_factor x = x:=by sorry
+      simp[temp]
+      exact dp.sums
+    odd := by
+
+      -- intro a b
+      -- simp[odd] at b
+      -- rcases b with ⟨b,hb⟩
+      -- have b_odd: b%2 = 1:=by
+      --   unfold highest_odd_factor at hb
+      --   rw[hb.right.left.left]
+
+
+    distinct_odd_parts := by sorry
+    dop_def := by sorry
+
+  }
+  -- simp[dis_parts]
+  --     simp[Multiset.sum_map_mul_right]
+  --     simp[binary2_sum_to_n]
+  --     simp[←h.sums]
+  --     simp[←count_sum]
+  --     rw[h.dop_def]

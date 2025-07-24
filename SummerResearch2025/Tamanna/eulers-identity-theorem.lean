@@ -59,10 +59,6 @@ lemma binary_no_duplicate(n:ℕ): (binary2 n).Nodup:= by
 lemma nd_time_const_nd(n:ℕ) (ms: Multiset ℕ)(hnd:ms.Nodup):
   (ms.map fun x ↦ x * n).Nodup:=by
   sorry
-lemma const_time_2nondp_nd(n1:ℕ) (n2:ℕ)(hne:n1≠n2)
-        (ms: Multiset ℕ)(hnd:ms.Nodup):
-  Disjoint (ms.map fun x ↦ x * n1) (ms.map fun x ↦ x * n2):=by
-  sorry
 lemma finset_nsmul_eq_mul (s : Multiset ℕ) :
     ∑ x ∈ s.toFinset, (s.count x) * x =
     ∑ x ∈ s.toFinset, (s.count x) • x:= by

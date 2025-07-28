@@ -21,6 +21,7 @@ def binary (n : ℕ): Multiset ℕ := n.bitIndices.map fun i => 2 ^ i
 -- Map from odd partitions to partitions
 def FromOdd_parts (n : ℕ) (P : n.Partition) (_ : P ∈ (odds n)): Multiset ℕ :=
    ∑ a ∈ P.parts.toFinset, (binary (Multiset.count a P.parts)).map (fun y ↦ y * a)
+-- Maybe should have used dedup rather than toFinset
 
 lemma FromOdd_parts_pos (n : ℕ) (P : n.Partition) (hP : P ∈ (odds n)) : i ∈ (FromOdd_parts n P hP) → i > 0 := by
   rintro hi
@@ -77,29 +78,51 @@ def FromOdd (n : ℕ) (P : n.Partition) (hP : P ∈ (odds n)): n.Partition :=
 def FromDist_parts (n : ℕ) (P : n.Partition) (_ : P ∈ (distincts n)): Multiset ℕ :=
    ∑ a ∈ P.parts.toFinset, (binary (Multiset.count a P.parts)).map (fun y ↦ y * a)
 
+
 -- Image of FromOdd is in distinct partitions
+/- Recall definition of FromOdd_parts
+def FromOdd_parts (n : ℕ) (P : n.Partition) (_ : P ∈ (odds n)): Multiset ℕ :=
+   ∑ a ∈ P.parts.toFinset, (binary (Multiset.count a P.parts)).map (fun y ↦ y * a)
+-/
 lemma InDist (n : ℕ) (P : n.Partition) (hP : P ∈ (odds n)) : FromOdd n P hP ∈ (distincts n) := by
   unfold distincts
   simp
   unfold FromOdd
   simp
   unfold FromOdd_parts
-  #check Multiset.nodup_bind
+  have Finsetsum_eq_Bind: ∑ a ∈ P.parts.toFinset, (binary (Multiset.count a P.parts)).map (fun y ↦ y * a) =  Multiset.bind P.parts.toFinset.val (fun a ↦
+    (binary (Multiset.count a P.parts)).map (fun y ↦ y * a)) := by
+    rfl
+  rw [Finsetsum_eq_Bind]
+  apply Multiset.nodup_bind.mpr
+  constructor
+  · rintro a a_in_parts
+    apply Multiset.Nodup.map
+    -- fun y => y * a is injective
+    · rintro y1 y2 heq
+      dsimp at heq
+      have a_nonzero : a ≠ 0 := by
+        apply Nat.pos_iff_ne_zero.mp
+        apply P.parts_pos
+        apply Multiset.mem_toFinset.mp a_in_parts
+      exact (Nat.mul_left_inj a_nonzero).mp heq
+    -- binary has no duplicates
+    · unfold binary
+      apply Multiset.coe_nodup.mpr
+      exact List.Nodup.map (Nat.pow_right_injective (le_refl 2)) (List.Sorted.nodup (bitIndices_sorted))
+      /- Suggest to add
+      theorem bitIndices_nodup {n : ℕ} : n.bitIndices.Nodup := List.Sorted.nodup (bitIndices_sorted)
+      to Nat/BitIndices.lean
+      -/
+  -- pairwise disjoint
+  ·
+    simp
+    unfold Multiset.Pairwise
+    let PListParts :=  P.parts.sort (· ≤ ·)
+    sorry
+#check Multiset.sort
 
-
-
-#check distincts n
-
-#check Multiset.sum_join
-#check twoPowSum_bitIndices
---(List.map (fun i => 2 ^ i) n.bitIndices).sum = n
-
-#check ofSums
-#check ofMultiset
-#check (Multiset.count 1 P.parts)
-#check Multiset
-#check Multiset.toFinset
-#check Multiset.smul_sum
+-- If A is a Finset, it consists of a multiset A.val and a proposition A.nodup that A has no duplicates.
 
 
 -- Euler's identity states that the number of odd partitions of `n` is equal to the number of distinct partitions of `n`.

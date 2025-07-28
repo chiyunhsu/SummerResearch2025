@@ -7,7 +7,7 @@ def areaIsSquare (x y : ℤ) : Prop :=
   ∃ a : ℕ, x * y = 2 * a^2
 
 def goodParam (p q : ℤ) : Prop :=
-  0 < q ∧ q < p ∧ Int.gcd p q = 1 ∧ ( (p % 2 = 0 ∧ q % 2 = 1) ∨ (p % 2 = 1 ∧ q % 2 = 0) )
+  0 < q ∧ p > q ∧ Int.gcd p q = 1 ∧ ( (p % 2 = 0 ∧ q % 2 = 1) ∨ (p % 2 = 1 ∧ q % 2 = 0) )
 
 lemma opp_parity_odd_diff {p q : ℤ}
     (h : goodParam p q) :
@@ -20,6 +20,17 @@ lemma opp_parity_odd_diff {p q : ℤ}
     have : (p - q) % 2 = (1 - 0) % 2 := by rw [←hp, ←hq]; norm_num
     exact this
 
+lemma opp_parity_odd_sum {p q : ℤ}
+    (h : goodParam p q) :
+    (p + q) % 2 = 1 := by
+  rcases h.right.right.right with ⟨hp, hq⟩ | ⟨hp, hq⟩
+  · -- Case: p even, q odd
+    have : (p + q) % 2 = (0 + 1) % 2 := by rw [←hp, ←hq]; norm_num
+    exact this
+  · -- Case: p odd, q even
+    have : (p + q) % 2 = (1 + 0) % 2 := by rw [←hp, ←hq]; norm_num
+    exact this
+
 def genTriple (p q : ℤ) : ℤ × ℤ × ℤ :=
   let x := 2 * p * q
   let y := p^2 - q^2
@@ -30,11 +41,10 @@ def hasSquareArea (p q : ℤ) : Prop :=
   ∃ a : ℕ, p * q * (p^2 - q^2) = a^2
 
 def isSquare (n : ℤ) : Prop :=
-  ∃ k : ℕ, k^2 = n
+  ∃ k : ℤ, k^2 = n
 
 def productOfCoprimeFactorsIsSquare (p q : ℤ) : Prop :=
   isSquare (p * q * (p + q) * (p - q))
-
 -- x = 2pq, y = p^2 - q^2
 -- xy/2 = 2pq(p^2-q^2)/2 = pq(p^2-q^2) = pq(p+q)(p-q)
 lemma square_area_implies_product_square {p q : ℤ} (h : hasSquareArea p q) : isSquare (p * q * (p + q) * (p - q)) :=
@@ -82,10 +92,6 @@ lemma odd_coprime_two {a : ℤ} (h : a % 2 = 1) : Int.gcd a 2 = 1 := by
 -- look at:
 -- https://github.com/leanprover-community/mathlib4/blob/d19cd93f3db24ca3a2ab957c266dd7e1ce2110fa/Mathlib/RingTheory/Int/Basic.lean#L47-L57
 
--- lemma: if a*b is square with a, b coprime, then a and b are squares
--- square: exponent of each prime is even in factorization
--- coprime: if nonzero exponent of prime in one number, other number's prime must have zero exponent
--- factorization was very difficult, was not able to make progress
 theorem coe_gcd (i j : ℤ) : ↑(Int.gcd i j) = GCDMonoid.gcd i j :=
   rfl
 
@@ -144,7 +150,7 @@ lemma coprime_square_product {a b : ℤ}
       rw [← Int.mul_neg_one] at square_nonneg
       linarith
 
-  -- Case 3: a = -a0^2, b = b0^2
+  -- Case 3: a = -a0^2
   · exfalso
     have a_pos := hpos.left
     rw [ha0] at a_pos
@@ -197,6 +203,145 @@ lemma coprime_linear_factors {p q : ℤ} (hgood : goodParam p q) (hsq : isSquare
       exact hcoprime_p_diff
     exact coprime_mul hcoprime_2 hcoprime_p
 
-  -- Now apply coprime_square_product to the product split as (p * q) * ((p + q) * (p - q))
+  -- Now apply coprime_square_product to the product split by taking the right-most part out
 
+  /-
+  coprime_square_product needs:
+  hcoprime a b
+  hsquare a * b
+  hpos a > 0 ∧ b > 0
+  -/
+
+  let rest1 := p * q * (p + q)
+
+  have hcoprime1 : Int.gcd (p - q) rest1 = 1 := by
+    apply coprime_mul
+    · apply coprime_mul
+      · -- gcd(p - q, p)
+        rw [Int.gcd_comm]
+        exact hcoprime_p_diff
+      · -- gcd(p - q, q)
+        rw [Int.gcd_comm]
+        exact hcoprime_q_diff
+    · -- gcd(p - q, p + q)
+      exact h_coprime_diff_sum
+
+  -- hgood.1 : q > 0
+  -- hgood.2.1 : p > q
+
+  have pos_q : q > 0 := by
+    apply hgood.1
+
+  have pos_p : p > 0 :=
+    lt_trans pos_q hgood.2.1
+
+  have pos_rest1 : rest1 > 0 :=
+    mul_pos (mul_pos pos_p pos_q) (add_pos pos_p pos_q)
+
+  have pos_diff : p - q > 0 :=
+    sub_pos_of_lt hgood.2.1
+
+  have htotal_square : isSquare ((p - q) * rest1) := by
+    rw [mul_comm]
+    exact hsq
+
+  have ⟨hsq_diff, hsq_rest1⟩ := coprime_square_product hcoprime1 htotal_square ⟨pos_diff, pos_rest1⟩
+
+  let rest2 := p * q
+
+  have hcoprime2 : Int.gcd (p + q) rest2 = 1 := by
+    apply coprime_mul
+    rw [Int.gcd_comm]
+    exact hcoprime_p_sum
+    rw [Int.gcd_comm]
+    exact hcoprime_q_sum
+
+  have pos_rest2 : rest2 > 0 :=
+    mul_pos pos_p pos_q
+
+  have pos_sum : p + q > 0 :=
+    add_pos pos_p pos_q
+
+  have htotal_square1 : isSquare ((p + q) * rest2) := by
+    rw [mul_comm]
+    exact hsq_rest1
+
+  have ⟨hsq_sum, hsq_rest2⟩ := coprime_square_product hcoprime2 htotal_square1 ⟨pos_sum, pos_rest2⟩
+
+  have hpq_square : isSquare (p * q) := by
+    exact hsq_rest2
+
+  have ⟨hsq_p, hsq_q⟩ := coprime_square_product hcoprime_pq hpq_square ⟨pos_p, pos_q⟩
+
+  exact ⟨hsq_p, hsq_q, hsq_sum, hsq_diff⟩
+
+lemma goodParam_squares {p q : ℤ} (hgood : goodParam p q)
+    (hsq : isSquare (p * q * (p + q) * (p - q))) :
+    ∃ r s : ℤ, r^2 = p + q ∧ s^2 = p - q := by
+  obtain ⟨hsq_p, hsq_q, hsq_sum, hsq_diff⟩ :=
+    coprime_linear_factors hgood hsq
+
+  obtain ⟨r, hr⟩ := hsq_sum
+  obtain ⟨s, hs⟩ := hsq_diff
+
+  exact ⟨r, s, hr, hs⟩
+
+lemma odd_rs {p q r s : ℤ}
+    (hgood : goodParam p q)
+    (hr : r^2 = p + q)
+    (hs : s^2 = p - q) :
+    r % 2 = 1 ∧ s % 2 = 1 := by
+
+  have h_sum_mod : r ^ 2 % 2 = 1 := by
+    rw [hr]
+    exact opp_parity_odd_sum hgood
+
+  have h_diff_mod : s ^ 2 % 2 = 1 := by
+    rw [hs]
+    exact opp_parity_odd_diff hgood
+
+  -- split r % 2 into 0 or 1
+  have r_mod_cases := Int.emod_two_eq_zero_or_one r
+  have s_mod_cases := Int.emod_two_eq_zero_or_one s
+
+  rcases r_mod_cases with (r_even | r_odd)
+  · -- Case r % 2 = 0
+    -- Then r = 2k ⇒ r² = 4k² ≡ 0 mod 2
+    have h_even_contra : r ^ 2 % 2 = 0 := by
+      obtain ⟨k, hk⟩ := Int.modEq_zero_iff_dvd.mp r_even
+      rw [hk, sq]
+      simp [mul_assoc]
+
+    rw [h_even_contra] at h_sum_mod
+    norm_num at h_sum_mod
+
+  rcases s_mod_cases with (s_even | s_odd)
+  · -- Case s % 2 = 0
+    -- Then s = 2k ⇒ s² = 4k² ≡ 0 mod 2
+    have h_even_contra : s ^ 2 % 2 = 0 := by
+      obtain ⟨k, hk⟩ := Int.modEq_zero_iff_dvd.mp s_even
+      rw [hk, sq]
+      simp [mul_assoc]
+
+    rw [h_even_contra] at h_diff_mod
+    norm_num at h_diff_mod
+
+  -- only remaining case
+  exact ⟨r_odd, s_odd⟩
+
+-- r + s is even
+-- r - s is even
+-- one of r + s and r - s is divisible by 4
+lemma even_mod_four {r s : ℤ}
+    (hr : r % 2 = 1)
+    (hs : s % 2 = 1) :
+    (r + s) % 2 = 0 ∧ (r - s) % 2 = 0 ∧ ((r + s) % 4 = 0 ∨ (r - s) % 4 = 0) := by
+  constructor
+  · -- (r + s) % 2 = 0
+    have : (r + s) % 2 = (1 + 1) % 2 := by rw [←hr, ←hs]; norm_num
+    exact this
+  constructor
+  · -- (r - s) % 2 = 0
+    have : (r - s) % 2 = (1 - 1) % 2 := by rw [←hr, ←hs]; norm_num
+    exact this
   sorry

@@ -44,7 +44,6 @@ Partition
 assert_not_exists Field
 
 open Multiset
-open Nat Finset List Finsupp
 -- open RingTheory.UniqueFactorizationDomain
 namespace Nat
 
@@ -185,51 +184,32 @@ def highest_odd_factor : ℕ → ℕ
 | n@(k+1) =>
   if n % 2 = 1 then n
   else highest_odd_factor (n / 2)
---maybe include the fact that the above line is still divisible
 
+lemma n_non0_hof_non0 (n:ℕ) (hn_nonzero:n ≠ 0): highest_odd_factor n ≠ 0:=by
+  induction' n using Nat.strong_induction_on with n ih
+  cases n with
+  | zero    =>
+  contradiction
+  | succ n =>
+    unfold highest_odd_factor
+    by_cases c: n.succ % 2 =1
+    simp[c]
 
--- termination_by n => n
--- decreasing_by
---   simp_wf
---   rename_i h1 h2
---   rw[h1]
---   let a := k+1
---   have p: 2 > 1 := by
---     simp
---   have r: a≤ a :=by
---     rfl
---   exact lt_div
---     (a:=a)
---     (b:=a)
---     (c:=2)
---     (h_lt_1:= p)
---     (h_le:=r)
+    simp[c]
 
---Nat.dvd_iff_mod_eq_zero
--- #eval highest_odd_factor 444
--- #eval (highest_odd_factor 444).factorization 4
+    have temp: (n.succ / 2) < n + 1 := by omega
+    have temp2: (n.succ / 2) ≠ 0 := by omega
+    exact ih (n.succ / 2) temp temp2
 
+lemma hof_zero_iff_n_zero :n = 0 ↔ highest_odd_factor n = 0:=by
+  constructor
+  intro h
+  rw[h]
+  simp[highest_odd_factor]
+  contrapose
+  exact n_non0_hof_non0 (n:= n)
 
-lemma hof_divides (n:ℕ): highest_odd_factor n ∣ n:= by
-  --we know n/2 divides n,maybe look at cases
-  --also posible to just define hof with 2^ power of something rather than resursion
-  -- rw[Nat.dvd_iff_mod_eq_zero]
-  -- simp[Nat.mod_def]
-  -- by_cases odd: highest_odd_factor n % 2 = 0
-  -- omega
-
-  rw [dvd_def]
-
-
-
-
-
-  -- omega
-
-  -- unfold highest_odd_factor
--- lemma n_div2_nonzero (n:ℕ) (hn_nonzero:n ≠ 0)
-lemma hof_non_zero (n:ℕ) (hn_nonzero:n ≠ 0): highest_odd_factor n ≠ 0:=by
---if n is nonzero hof is odd
+lemma n_non0_hof_odd (hn_nonzero:n ≠ 0): highest_odd_factor n % 2 = 1 :=by
   induction' n using Nat.strong_induction_on with n ih
   cases n with
   | zero    =>
@@ -239,46 +219,54 @@ lemma hof_non_zero (n:ℕ) (hn_nonzero:n ≠ 0): highest_odd_factor n ≠ 0:=by
     by_cases c: n'.succ % 2 =1
     simp[c]
     simp[c]
-    have temp: (n'.succ / 2) < n' + 1 := by omega
+    have temp: (n'.succ / 2) < (n' + 1) := by omega
     have temp2: (n'.succ / 2) ≠ 0 := by omega
-    exact ih (n'.succ / 2) temp temp2
-lemma hof_non_zero2 (n:ℕ):n ≠ 0↔ highest_odd_factor n ≠ 0:=by
-  -- constructor
-  sorry
--- lemma contra_hof_non_zero(n:ℕ)(h:highest_odd_factor n = 0): n = 0:= by
---   exact
+    apply ih (n'.succ / 2) temp temp2
+
+lemma hof_non0_n_odd: n%2 =1 → highest_odd_factor n ≠ 0:=by
+  intro h
+  rw[Nat.mod_def] at h
+  have temp: n = 1 + 2 *(n/2) :=by omega
+  have temp2 : 1 + 2 *(n/2) ≠ 0 :=by omega
+  rw[temp]
+  apply hof_zero_iff_n_zero.not.1
+  exact temp2
 lemma hof_even_is_0(n:ℕ)(h: highest_odd_factor n % 2 = 0): (highest_odd_factor n = 0 ):=by
-  --:highest_odd_factor n % 2 = 0 → hof = 0 → n = 0
-  -- constructor
-  -- swap
-
-  -- intro h
-  -- rw[h]
-
-  -- intro h
-
   by_cases c: n = 0
   rw[c]
   simp[highest_odd_factor]
-
-  by_contra
-
-  apply hof_non_zero at c
-
-  sorry
-
-
-  -- rw[hof_non_zero] at c
-
-
-
+  apply hof_zero_iff_n_zero.not.1 at c
+  false_or_by_contra
+  have temp: n ≠ 0 := by
+    exact hof_zero_iff_n_zero.not.2 c
+  have temp2: highest_odd_factor n % 2 = 1:= by
+    exact n_non0_hof_odd (hn_nonzero:=temp)
+  rw[h] at temp2
+  contradiction
+lemma n_sub_n_zero(n:ℕ) : n - n = 0 :=by omega
+lemma hof_divides (n:ℕ): highest_odd_factor n ∣ n:= by
+  induction' n using Nat.strong_induction_on with n ih
+  cases n with
+  | zero    =>
+  simp[highest_odd_factor]
+  | succ n' =>
+  simp[ highest_odd_factor]
+  by_cases case1: (n'.succ) % 2 = 1
+  simp[case1]
+  simp[case1]
+  have temp: (n'.succ / 2) < n' + 1 := by omega
+  have temp2: highest_odd_factor ((n'.succ) / 2) ∣( (n'.succ)/2):=by
+    apply ih (n'.succ / 2) temp
+  have case2 : 2 ∣ n'.succ:= by
+    simp[Bool.not_eq] at case1
+    exact Nat.dvd_of_mod_eq_zero (H:= case1)
+  have temp3: (n'.succ / 2) ∣ n'.succ :=by
+    exact Nat.div_dvd_of_dvd (h := case2)
+  exact Nat.dvd_trans (h₁:=temp2) (h₂:=temp3)
 
 def dto(n:ℕ): distincts n → odds n:=by
-
   intro distinct
-
   rcases distinct with ⟨p,p_distinct⟩
-
   let odd := (p.parts).bind fun y ↦
   Multiset.ofList (List.replicate
           (y/(highest_odd_factor y)) (highest_odd_factor y))
@@ -293,8 +281,6 @@ def dto(n:ℕ): distincts n → odds n:=by
           simp at pos
           rcases pos with ⟨w,h⟩
           apply Nat.pos_iff_ne_zero.2
-          #check h.2.1.1
-          #check h.2.2
           rw[h.2.2]
           exact h.2.1.1
         parts_sum:=by
@@ -304,7 +290,6 @@ def dto(n:ℕ): distincts n → odds n:=by
             intro x hx
             have temp := by
               exact hof_divides x
-
             exact Nat.div_mul_cancel temp
           have map_simp : p.parts.map (fun x => x / highest_odd_factor x * highest_odd_factor x) = p.parts.map (fun x => x) := by
             apply Multiset.map_congr
@@ -315,7 +300,6 @@ def dto(n:ℕ): distincts n → odds n:=by
           exact p.parts_sum
       }
     property := by
-      trace_state
       unfold odds
       simp
       unfold odd
@@ -323,7 +307,6 @@ def dto(n:ℕ): distincts n → odds n:=by
       intro n1 n2 hmem hn2non0 hn2rfl hn2eqn1
       rw[hn2eqn1]
       unfold Odd
-
       by_cases case1: (highest_odd_factor n2) % 2 = 0
       apply hof_even_is_0 at case1
       contradiction

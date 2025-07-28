@@ -44,7 +44,8 @@ Partition
 assert_not_exists Field
 
 open Multiset
-
+open Nat Finset List Finsupp
+-- open RingTheory.UniqueFactorizationDomain
 namespace Nat
 
 /-- A partition of `n` is a multiset of positive integers summing to `n`. -/
@@ -178,14 +179,15 @@ def distincts (n : ℕ) : Finset (Partition n) :=
 def oddDistincts (n : ℕ) : Finset (Partition n) :=
   odds n ∩ distincts n
 
-lemma lt_div(a:ℕ)(b:ℕ)(c:ℕ)(h_le:a ≤ b)(h_lt_1: c > 1):(a / c) < b:=by
-  simp?
 
 def highest_odd_factor : ℕ → ℕ
 | 0       => 0
 | n@(k+1) =>
   if n % 2 = 1 then n
   else highest_odd_factor (n / 2)
+--maybe include the fact that the above line is still divisible
+
+
 -- termination_by n => n
 -- decreasing_by
 --   simp_wf
@@ -202,14 +204,74 @@ def highest_odd_factor : ℕ → ℕ
 --     (c:=2)
 --     (h_lt_1:= p)
 --     (h_le:=r)
-lemma non_0_hof_non_0(n:ℕ)(hn0:0<n):0< highest_odd_factor n :=by
-  sorry
-lemma hof_le_itself (n:ℕ): n ≥ highest_odd_factor n :=by
-  sorry
+
+--Nat.dvd_iff_mod_eq_zero
+-- #eval highest_odd_factor 444
+-- #eval (highest_odd_factor 444).factorization 4
+
+
 lemma hof_divides (n:ℕ): highest_odd_factor n ∣ n:= by
+  --we know n/2 divides n,maybe look at cases
+  --also posible to just define hof with 2^ power of something rather than resursion
+  -- rw[Nat.dvd_iff_mod_eq_zero]
+  -- simp[Nat.mod_def]
+  -- by_cases odd: highest_odd_factor n % 2 = 0
+  -- omega
+
+  rw [dvd_def]
+
+
+
+
+
+  -- omega
+
+  -- unfold highest_odd_factor
+-- lemma n_div2_nonzero (n:ℕ) (hn_nonzero:n ≠ 0)
+lemma hof_non_zero (n:ℕ) (hn_nonzero:n ≠ 0): highest_odd_factor n ≠ 0:=by
+--if n is nonzero hof is odd
+  induction' n using Nat.strong_induction_on with n ih
+  cases n with
+  | zero    =>
+  contradiction
+  | succ n' =>
+    unfold highest_odd_factor
+    by_cases c: n'.succ % 2 =1
+    simp[c]
+    simp[c]
+    have temp: (n'.succ / 2) < n' + 1 := by omega
+    have temp2: (n'.succ / 2) ≠ 0 := by omega
+    exact ih (n'.succ / 2) temp temp2
+lemma hof_non_zero2 (n:ℕ):n ≠ 0↔ highest_odd_factor n ≠ 0:=by
+  -- constructor
+  sorry
+-- lemma contra_hof_non_zero(n:ℕ)(h:highest_odd_factor n = 0): n = 0:= by
+--   exact
+lemma hof_even_is_0(n:ℕ)(h: highest_odd_factor n % 2 = 0): (highest_odd_factor n = 0 ):=by
+  --:highest_odd_factor n % 2 = 0 → hof = 0 → n = 0
+  -- constructor
+  -- swap
+
+  -- intro h
+  -- rw[h]
+
+  -- intro h
+
+  by_cases c: n = 0
+  rw[c]
+  simp[highest_odd_factor]
+
+  by_contra
+
+  apply hof_non_zero at c
+
   sorry
 
-#eval Multiset.ofList (List.replicate (60/(highest_odd_factor 60)) (highest_odd_factor 60))
+
+  -- rw[hof_non_zero] at c
+
+
+
 
 def dto(n:ℕ): distincts n → odds n:=by
 
@@ -242,6 +304,7 @@ def dto(n:ℕ): distincts n → odds n:=by
             intro x hx
             have temp := by
               exact hof_divides x
+
             exact Nat.div_mul_cancel temp
           have map_simp : p.parts.map (fun x => x / highest_odd_factor x * highest_odd_factor x) = p.parts.map (fun x => x) := by
             apply Multiset.map_congr
@@ -250,50 +313,29 @@ def dto(n:ℕ): distincts n → odds n:=by
           rw[map_simp]
           simp
           exact p.parts_sum
-
       }
-      --  Finset.univ.filter fun c => c.parts.Nodup
-
     property := by
       trace_state
       unfold odds
       simp
-      unfold odd Odd
-      simp
+      unfold odd
+      simp?
       intro n1 n2 hmem hn2non0 hn2rfl hn2eqn1
       rw[hn2eqn1]
-      constructor
-      unfold highest_odd_factor
+      unfold Odd
 
-      -- induction' n with n ih
-      -- cases n with
-      -- | zero =>
-      --   cases hn2non0
-      -- | succ n =>
-      --   sorry
-      induction n2 with
-      | zero =>
-        simp[highest_odd_factor]
-        apply hn2non0
-        simp[highest_odd_factor]
-      | succ n ih =>
-      simp
-
-
-
-
-
+      by_cases case1: (highest_odd_factor n2) % 2 = 0
+      apply hof_even_is_0 at case1
+      contradiction
+      simp at case1
+      simp[Nat.mod_def] at case1
+      have : highest_odd_factor n2 = 2 * (highest_odd_factor n2 / 2) + 1 := by omega
+      use highest_odd_factor n2 / 2
   }
-
-def otd(n:ℕ): distincts n → odds n:=by
-  sorry
-
-
 end Partition
 
 end Nat
 
-variable {n : ℕ} {σ τ : Type*} [DecidableEq σ] [DecidableEq τ]
+open Nat Partition
 
-def dto {Partition}(n:ℕ)(p: Partition n):true:= by
-  sorry
+variable {n : ℕ} {σ τ : Type*} [DecidableEq σ] [DecidableEq τ]

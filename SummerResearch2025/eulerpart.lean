@@ -13,22 +13,22 @@ def highest_odd_factor : ℕ → ℕ
   if n % 2 = 1 then n
   else highest_odd_factor (n / 2)
 
--- termination_by n => n
--- decreasing_by
---   simp_wf
---   rename_i h1 h2
---   rw[h1]
---   let a := k+1
---   have p: 2 > 1 := by
---     simp
---   have r: a≤ a :=by
---     rfl
---   exact lt_div
---     (a:=a)
---     (b:=a)
---     (c:=2)
---     (h_lt_1:= p)
---     (h_le:=r)
+termination_by n => n
+decreasing_by
+  simp_wf
+  rename_i h1 h2
+  rw[h1]
+  let a := k+1
+  have p: 2 > 1 := by
+    simp
+  have r: a≤ a :=by
+    rfl
+  exact lt_div
+    (a:=a)
+    (b:=a)
+    (c:=2)
+    (h_lt_1:= p)
+    (h_le:=r)
 
 --hof of ALL the image
   --they come from different odd numbers they have to be different
@@ -177,6 +177,7 @@ lemma binary_no_duplicate(n:ℕ): (binary2 n).Nodup:= by
 --partitions just positive integers need to fix later
 lemma nd_time_const_nd(n:ℕ) (ms: Multiset ℕ)(hnd:ms.Nodup):
   (ms.map fun x ↦ x * n).Nodup:=by
+  --injective multiset map is noduplicate
   sorry
 
 

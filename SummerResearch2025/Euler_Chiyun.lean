@@ -17,9 +17,42 @@ open Nat Partition
 
 def binary (n : ℕ): Multiset ℕ := n.bitIndices.map fun i => 2 ^ i
 
-def ImageOfPart (n : ℕ) (P : n.Partition) (a : ℕ): Multiset ℕ :=
+lemma bitIndices_nonempty (x : ℕ) (x_neq_zero : x ≠ 0) : x.bitIndices ≠ [] := by
+  intro hyp
+  have x_eq_zero : x = 0 := by
+    rw[← twoPowSum_bitIndices x, hyp]
+    simp
+  contradiction
+
+-- Highest odd factor
+#eval Nat.factorization 0 2
+def hof (x : ℕ) : ℕ := x / (2 ^ (Nat.factorization x 2))
+/-
+def hof (x : ℕ) : ℕ :=
+  if x_neq_zero : x ≠ 0 then
+  x / 2 ^ (x.bitIndices[0]'
+  (List.ne_nil_iff_length_pos.mp (bitIndices_nonempty x x_neq_zero)))
+  else 0
+-/
+
+def ImageOfPart (n : ℕ) (P : n.Partition) (a : ℕ) : Multiset ℕ :=
   (binary (Multiset.count a P.parts)).map (fun y ↦ y * a)
 -- Maybe should have used dedup rather than toFinset
+
+lemma ImageOfPart_pos (n : ℕ) (P : n.Partition) (a : ℕ) (ha : a ∈ P.parts) : i ∈ (ImageOfPart n P a) → i > 0 := by
+  intro hi
+  apply Multiset.mem_map.mp at hi
+  rcases hi with ⟨y, hy, hi⟩
+  have a_pos : a > 0 := P.parts_pos ha
+  have y_pos : y > 0 := by
+    unfold binary at hy
+    apply List.mem_map.mp at hy
+    rcases hy with ⟨b, hb, hy⟩
+    rw [← hy]
+    apply Nat.pow_pos
+    simp
+  rw[← hi]
+  exact Nat.mul_pos y_pos a_pos
 
 -- Map from odd partitions to partitions
 def FromOdd_parts (n : ℕ) (P : n.Partition) : Multiset ℕ :=
@@ -30,20 +63,7 @@ lemma FromOdd_parts_pos (n : ℕ) (P : n.Partition) : i ∈ (FromOdd_parts n P) 
   unfold FromOdd_parts at hi
   apply Multiset.mem_sum.mp at hi
   rcases hi with ⟨a, ha, hi⟩
-  apply Multiset.mem_map.mp at hi
-  rcases hi with ⟨y, hy, hi⟩
-  have a_pos : a > 0 := by
-    apply P.parts_pos
-    exact Multiset.mem_toFinset.mp ha
-  have y_pos : y > 0 := by
-    unfold binary at hy
-    apply List.mem_map.mp at hy
-    rcases hy with ⟨b, hb, hy⟩
-    rw [← hy]
-    apply Nat.pow_pos
-    simp
-  rw[← hi]
-  exact Nat.mul_pos y_pos a_pos
+  exact ImageOfPart_pos n P a (Multiset.mem_toFinset.mp ha) hi
 
 lemma mul_comm_sum (s : Multiset ℕ) (a : ℕ) : (Multiset.map (fun x ↦ x * a) s).sum = s.sum * a:= by
   simp [Multiset.sum_map_mul_right]
@@ -79,14 +99,6 @@ def FromOdd (n : ℕ) (P : n.Partition) : n.Partition :=
 def FromDist_parts (n : ℕ) (P : n.Partition) (_ : P ∈ (distincts n)): Multiset ℕ :=
    ∑ a ∈ P.parts.toFinset, (binary (Multiset.count a P.parts)).map (fun y ↦ y * a)
 
-
--- Image of FromOdd is in distinct partitions
-/- Recall definition of FromOdd_parts
-def FromOdd_parts (n : ℕ) (P : n.Partition) (_ : P ∈ (odds n)): Multiset ℕ :=
-   ∑ a ∈ P.parts.toFinset, (binary (Multiset.count a P.parts)).map (fun y ↦ y * a)
--/
-
-
 lemma ImageOfPart_nodup (n : ℕ) (P : n.Partition) : ∀ a ∈ P.parts.dedup, (ImageOfPart n P a).Nodup := by
   rintro a a_in_parts
   apply Multiset.Nodup.map
@@ -107,9 +119,85 @@ lemma ImageOfPart_nodup (n : ℕ) (P : n.Partition) : ∀ a ∈ P.parts.dedup, (
     to Nat/BitIndices.lean
     -/
 
+
+-- def hof (n : ℕ) : ℕ
+-- x / 2 ^ (x.bitIndices[0]
+-- ImageOfPart_pos (n : ℕ) (P : n.Partition) (a : ℕ) (ha : a ∈ P.parts) : i ∈ (ImageOfPart n P a) → i > 0
+#eval Nat.Prime 2
+lemma two_pow_dvd (x : ℕ) (x_ne_zero : x ≠ 0): 2 ^ (x.factorization 2) ∣ x := by
+  have two_pow_ne_zero : 2 ^ (x.factorization 2) ≠ 0 := pow_ne_zero _ two_ne_zero
+  apply (factorization_le_iff_dvd two_pow_ne_zero x_ne_zero).mp
+  simp
+  intro p
+  by_cases two : p = 2
+  · simp [two]
+  sorry
+
+lemma hof_mul_two_pow (x i : ℕ) : hof (2 ^ i * x) = hof (x) := by
+  unfold hof
+  by_cases xzero : x = 0
+  · simp [xzero]
+  · have two_pow_x_ne_zero : 2 ^ i * x ≠ 0 := by
+      apply Nat.mul_ne_zero
+      exact pow_ne_zero i two_ne_zero
+      exact xzero
+    #check Prime.factorization_pow
+    --simp [xzero, two_pow_x_ne_zero]
+    #check Prime.factorization_pow prime_two
+    simp [xzero, two_pow_x_ne_zero, Prime.factorization_pow prime_two]
+    calc
+    (2 ^ i * x) / 2 ^ (i + x.factorization 2) = (2 ^ i * x) / (2 ^ i * 2 ^ (x.factorization 2)) := by rw [Nat.pow_add]
+    _ = (2 ^ i  / 2 ^ i) * (x / (2 ^ (x.factorization 2))) := Nat.mul_div_mul_comm (dvd_refl _) (two_pow_dvd x xzero)
+
+
+
+
+/-
+  if x_neq_zero : x ≠ 0 then
+  have : (2 ^ i * x).bitIndices = (bitIndices x).map (· + i) := by
+    induction' i with i hi
+    · simp
+    · calc
+      (2 ^ (i + 1) * x).bitIndices = (2 * (2 ^ i * x)).bitIndices := by simp
+      _ = ((2 ^ i * x).bitIndices).map (· + 1) := by simp
+      _ = ((bitIndices x).map (· + i)).map (· + 1) := by rw [hi]
+      _ = (bitIndices x).map (· + (i + 1)) := by simp
+  have two_pow_x_neq_zero : 2^i * x ≠ 0 := by
+    apply Nat.mul_ne_zero
+    exact pow_ne_zero i two_ne_zero
+    exact x_neq_zero
+  unfold hof
+
+  sorry
+  else simp [hof]
+-/
+
+lemma hof_eq_of_odd (a : ℕ) (a_odd : Odd a) : hof a = a := by sorry
+
+lemma ImageOfPart_hof (n : ℕ) (P : n.Partition) (P_odd : P ∈ (odds n)) (a : ℕ) (ha : a ∈ P.parts) : ∀ x ∈ ImageOfPart n P a, hof x = a := by
+  rintro x hx
+  apply Multiset.mem_map.mp at hx
+  rcases hx with ⟨y, hy, hx⟩
+  unfold binary at hy
+  simp at hy
+  rcases hy with ⟨i, hi, hy⟩
+  rw [← hx, ← hy, hof_mul_two_pow a i]
+  apply hof_eq_of_odd a
+  apply Nat.not_even_iff_odd.mp
+  exact (Finset.mem_filter.mp P_odd).2 a ha
+
 lemma ImageOfPart_disjoint (n : ℕ) (P : n.Partition) (P_odd : P ∈ (odds n)) :
   ∀ a ∈ P.parts.dedup, ∀ b ∈ P.parts.dedup, a ≠ b → Disjoint (ImageOfPart n P a) (ImageOfPart n P b) := by
-  sorry
+  rintro a ha b hb hneqab
+  apply Multiset.disjoint_iff_ne.mpr
+  rintro x hx y hy heqxy
+  have heqab : a = b := by
+    calc
+    a = hof x := (ImageOfPart_hof n P P_odd a (Multiset.mem_dedup.mp ha) x hx).symm
+    _ = hof y := by rw [heqxy]
+    _ = b := ImageOfPart_hof n P P_odd b (Multiset.mem_dedup.mp hb) y hy
+  contradiction
+
 
 lemma InDist (n : ℕ) (P : n.Partition) (P_odd : P ∈ (odds n)) : FromOdd n P ∈ (distincts n) := by
   unfold distincts
@@ -134,12 +222,12 @@ lemma InDist (n : ℕ) (P : n.Partition) (P_odd : P ∈ (odds n)) : FromOdd n P 
     rw [Multiset.sort_eq]
     apply (List.pairwiseDisjoint_iff_coe_toFinset_pairwise_disjoint (f := ImageOfPart n P) PListPart_nodup).mp
     rw [List.coe_toFinset]
-    intro a ha b hb aneqb
+    intro a ha b hb hneq
     simp only [Set.mem_setOf_eq] at ha hb
     unfold PListPart at ha hb
     rw [Multiset.mem_sort] at ha hb
     dsimp[Function.onFun]
-    exact ImageOfPart_disjoint n P P_odd a ha b hb aneqb
+    exact ImageOfPart_disjoint n P P_odd a ha b hb hneq
 
 -- Euler's identity states that the number of odd partitions of `n` is equal to the number of distinct partitions of `n`.
 theorem EulerIdentity (n : ℕ) : (odds n).card = (distincts n).card := card_bij' (FromOdd n) (FromDist n) (InDist n) (InOdd n) RightInv LeftInv

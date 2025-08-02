@@ -119,19 +119,30 @@ lemma ImageOfPart_nodup (n : ℕ) (P : n.Partition) : ∀ a ∈ P.parts.dedup, (
     to Nat/BitIndices.lean
     -/
 
+lemma prime_factorization_self {p : ℕ} (hp : Nat.Prime p) : p.factorization p = 1 := by
+  have : (p^1).factorization = Finsupp.single p 1 := Prime.factorization_pow (k := 1) hp
+  simp at this
+  rw [this]
+  simp
 
--- def hof (n : ℕ) : ℕ
--- x / 2 ^ (x.bitIndices[0]
--- ImageOfPart_pos (n : ℕ) (P : n.Partition) (a : ℕ) (ha : a ∈ P.parts) : i ∈ (ImageOfPart n P a) → i > 0
-#eval Nat.Prime 2
+lemma prime_factorization_diff {p n : ℕ} (hp : Nat.Prime p) (h : p ≠ n): p.factorization n = 0 := by
+  have : (p^1).factorization = Finsupp.single p 1 := Prime.factorization_pow (k := 1) hp
+  simp at this
+  rw [this]
+  exact Finsupp.single_eq_of_ne h
+
 lemma two_pow_dvd (x : ℕ) (x_ne_zero : x ≠ 0): 2 ^ (x.factorization 2) ∣ x := by
   have two_pow_ne_zero : 2 ^ (x.factorization 2) ≠ 0 := pow_ne_zero _ two_ne_zero
   apply (factorization_le_iff_dvd two_pow_ne_zero x_ne_zero).mp
-  simp
+  simp only [Nat.factorization_pow]
   intro p
-  by_cases two : p = 2
-  · simp [two]
-  sorry
+  by_cases two : 2 = p
+  · simp [← two]
+    rw [prime_factorization_self prime_two]
+    simp
+  · simp
+    rw [prime_factorization_diff prime_two two]
+    simp
 
 lemma hof_mul_two_pow (x i : ℕ) : hof (2 ^ i * x) = hof (x) := by
   unfold hof
@@ -141,38 +152,20 @@ lemma hof_mul_two_pow (x i : ℕ) : hof (2 ^ i * x) = hof (x) := by
       apply Nat.mul_ne_zero
       exact pow_ne_zero i two_ne_zero
       exact xzero
-    #check Prime.factorization_pow
-    --simp [xzero, two_pow_x_ne_zero]
-    #check Prime.factorization_pow prime_two
-    simp [xzero, two_pow_x_ne_zero, Prime.factorization_pow prime_two]
+    simp [xzero, two_pow_x_ne_zero]
+    simp [prime_factorization_self prime_two]
     calc
     (2 ^ i * x) / 2 ^ (i + x.factorization 2) = (2 ^ i * x) / (2 ^ i * 2 ^ (x.factorization 2)) := by rw [Nat.pow_add]
     _ = (2 ^ i  / 2 ^ i) * (x / (2 ^ (x.factorization 2))) := Nat.mul_div_mul_comm (dvd_refl _) (two_pow_dvd x xzero)
+    _ = x / (2 ^ (x.factorization 2)) := by simp
 
-
-
-
-/-
-  if x_neq_zero : x ≠ 0 then
-  have : (2 ^ i * x).bitIndices = (bitIndices x).map (· + i) := by
-    induction' i with i hi
-    · simp
-    · calc
-      (2 ^ (i + 1) * x).bitIndices = (2 * (2 ^ i * x)).bitIndices := by simp
-      _ = ((2 ^ i * x).bitIndices).map (· + 1) := by simp
-      _ = ((bitIndices x).map (· + i)).map (· + 1) := by rw [hi]
-      _ = (bitIndices x).map (· + (i + 1)) := by simp
-  have two_pow_x_neq_zero : 2^i * x ≠ 0 := by
-    apply Nat.mul_ne_zero
-    exact pow_ne_zero i two_ne_zero
-    exact x_neq_zero
+lemma hof_eq_of_odd (a : ℕ) (a_odd : Odd a) : hof a = a := by
   unfold hof
-
-  sorry
-  else simp [hof]
--/
-
-lemma hof_eq_of_odd (a : ℕ) (a_odd : Odd a) : hof a = a := by sorry
+  have : a.factorization 2 = 0 := by
+    apply Nat.factorization_eq_zero_of_not_dvd
+    exact Odd.not_two_dvd_nat a_odd
+  rw [this]
+  simp
 
 lemma ImageOfPart_hof (n : ℕ) (P : n.Partition) (P_odd : P ∈ (odds n)) (a : ℕ) (ha : a ∈ P.parts) : ∀ x ∈ ImageOfPart n P a, hof x = a := by
   rintro x hx

@@ -179,4 +179,28 @@ theorem sq_of_gcd_eq_one {a b c : ℕ} (h : Nat.gcd a b = 1) (heq : a * b = c ^ 
 
 -- gcd(a, b) = 1
 -- gcd(a, c) = 1
+
+-- Integer version (works)
+
+theorem sq_of_gcd_eq_one {a b c : ℤ} (h : Nat.gcd a b = 1) (heq : a * b = c ^ 2) :
+    ∃ a0 : ℤ, a = a0 ^ 2 ∨ a = -a0 ^ 2 := by
+  -- Convert gcd to IsUnit assumption
+  have h_unit : IsUnit (gcd a b) := by
+    rw [← coe_gcd, h]
+    exact isUnit_one
+
+  -- Use multiplicative square decomposition result
+  obtain ⟨d, ⟨u, hu⟩⟩ := exists_associated_pow_of_mul_eq_pow h_unit heq
+
+  -- `u` is a unit in ℤ, which must be 1
+  have : (u : ℤ) = 1 := Int.units_eq_one u
+  -- So u = 1 in Units ℤ
+  have u_eq : u = 1 := Units.ext this
+
+  -- Finish the proof
+  use d
+  rw [← hu, u_eq, one_mul]
+
+-- gcd(a, b) = 1
+-- gcd(a, c) = 1
 -/

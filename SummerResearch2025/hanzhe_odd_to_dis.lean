@@ -378,53 +378,9 @@ lemma InOdd (n : ℕ) (P : n.Partition) (hP : P ∈ (distincts n)) : (FromDis n 
 def dto(n:ℕ): distincts n → odds n:=by
   intro distinct
   rcases distinct with ⟨p,p_distinct⟩
-  let odd := (p.parts).bind fun y ↦
-  Multiset.ofList (List.replicate
-          (y/(highest_odd_factor y)) (highest_odd_factor y))
   refine{
-    val:=by
-      refine{
-        parts:=by
-          exact odd
-        parts_pos:=by
-          intro all pos
-          unfold odd at pos
-          simp at pos
-          rcases pos with ⟨w,h⟩
-          apply Nat.pos_iff_ne_zero.2
-          rw[h.2.2]
-          exact h.2.1.1
-        parts_sum:=by
-          unfold odd
-          simp
-          have temp2: ∀ x ∈ p.parts, x / highest_odd_factor x * highest_odd_factor x = x:=by
-            intro x hx
-            have temp := by
-              exact hof_divides x
-            exact Nat.div_mul_cancel temp
-          have map_simp : p.parts.map (fun x => x / highest_odd_factor x * highest_odd_factor x) = p.parts.map (fun x => x) := by
-            apply Multiset.map_congr
-            rfl
-            exact temp2
-          rw[map_simp]
-          simp
-          exact p.parts_sum
-      }
-    property := by
-      unfold odds
-      simp
-      unfold odd
-      simp?
-      intro n1 n2 hmem hn2non0 hn2rfl hn2eqn1
-      rw[hn2eqn1]
-      unfold Odd
-      by_cases case1: (highest_odd_factor n2) % 2 = 0
-      apply hof_even_is_0 at case1
-      contradiction
-      simp at case1
-      simp[Nat.mod_def] at case1
-      have : highest_odd_factor n2 = 2 * (highest_odd_factor n2 / 2) + 1 := by omega
-      use highest_odd_factor n2 / 2
+    val:= FromDis n p p_distinct
+    property := InOdd n p p_distinct
   }
 
 def otd(n:ℕ) : odds n → distincts n := by

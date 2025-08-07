@@ -44,7 +44,7 @@ Partition
 assert_not_exists Field
 
 open Multiset
--- open RingTheory.UniqueFactorizationDomain
+open Nat
 namespace Nat
 
 /-- A partition of `n` is a multiset of positive integers summing to `n`. -/
@@ -210,13 +210,17 @@ lemma hof_zero_iff_n_zero :n = 0 ↔ highest_odd_factor n = 0:=by
   exact n_non0_hof_non0 (n:= n)
 
 lemma n_non0_hof_odd (hn_nonzero:n ≠ 0): highest_odd_factor n % 2 = 1 :=by
+
   induction' n using Nat.strong_induction_on with n ih
+
   cases n with
   | zero    =>
   contradiction
   | succ n' =>
+
     unfold highest_odd_factor
     by_cases c: n'.succ % 2 =1
+
     simp[c]
     simp[c]
     have temp: (n'.succ / 2) < (n' + 1) := by omega
@@ -315,6 +319,7 @@ def dto(n:ℕ): distincts n → odds n:=by
       have : highest_odd_factor n2 = 2 * (highest_odd_factor n2 / 2) + 1 := by omega
       use highest_odd_factor n2 / 2
   }
+
 end Partition
 
 end Nat

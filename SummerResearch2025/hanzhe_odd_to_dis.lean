@@ -519,16 +519,6 @@ lemma otd_bij (n:ℕ): (otd n).Bijective := by
   simp[Function.HasLeftInverse]
   use dto n
   unfold Function.LeftInverse
-
-  -- unfold otd
-  -- unfold FromOdd FromOdd_parts
-  -- intro p1
-  -- simp?
-  -- ext1
-  -- rcases p1 with ⟨p1, p1_odd⟩
-  -- ext1
-  -- simp
-
   unfold dto otd
   unfold FromDis FromDis_parts FromOdd FromOdd_parts
   simp only [Subtype.forall, Subtype.mk.injEq]
@@ -545,12 +535,10 @@ lemma otd_bij (n:ℕ): (otd n).Bijective := by
   have aux_inp1_pos: ∀ x ∈ p1.parts, 0 < x := by
     intro x hx
     apply p1.parts_pos
-    apply Multiset.mem_toFinset.1
-    apply Multiset.mem_toFinset.2
     exact hx
 
-  set f : ℕ → Multiset ℕ :=
-      fun y ↦ ↑(List.replicate (y / highest_odd_factor y) (highest_odd_factor y)) with hf
+  set f : ℕ → Multiset ℕ :=fun y ↦ ↑(List.replicate (y / highest_odd_factor y) (highest_odd_factor y))
+  with hf
   have bind_replicate (x k : ℕ) (hpos: 0 < x) (hodd : x % 2 = 1) :((binary k).map (fun y ↦ y * x)).bind f = ↑(List.replicate k x: Multiset ℕ) := by
     have hfx : ∀ y ∈ binary n, f (y * x) = List.replicate y x := by
       intro y hy
@@ -604,6 +592,40 @@ lemma otd_bij (n:ℕ): (otd n).Bijective := by
         contradiction
       exact temp2
       exact hb
+  have sum_bind {α β γ}(s : Finset α) (g : α → Multiset β) (f : β → Multiset γ) : (∑ a in s, g a).bind f = ∑ a in s, (g a).bind f := by
+    classical
+    refine Finset.induction ?_ ?_ s
+    · simp
+    · intro a s ha ih
+      simp [Finset.sum_insert ha, Multiset.bind_add, ih]
+  have map_temp1 :
+    (∑ x ∈ p1.parts.toFinset,(binary (Multiset.count x p1.parts)).map (fun y ↦ y * x)).bind f =
+    ∑ x ∈ p1.parts.toFinset,((binary (Multiset.count x p1.parts)).map (fun y ↦ y * x)).bind f := by
+      apply sum_bind
+
+  have map_temp2 :
+  (∑ x ∈ p1.parts.toFinset,((binary (Multiset.count x p1.parts)).map (fun y ↦ y * x)).bind f) =
+  ∑ x ∈ p1.parts.toFinset, (↑(List.replicate (Multiset.count x p1.parts) x) : Multiset ℕ) := by
+    apply Finset.sum_congr rfl
+    intro x hx
+    specialize aux_inp1_odd x (Multiset.mem_toFinset.mp hx)
+    specialize aux_inp1_pos x (Multiset.mem_toFinset.mp hx)
+    rw[bind_replicate x (Multiset.count x p1.parts) aux_inp1_pos aux_inp1_odd]
+  rw[map_temp1,map_temp2]
+
+  have temp3:  ∑ x ∈ p1.parts.toFinset, ↑(List.replicate (Multiset.count x p1.parts) x) = p1.parts := by
+    ext a
+    by_cases case: a ∈ p1.parts.toFinset
+    ·
+
+
+
+
+
+
+
+
+
 
 
 

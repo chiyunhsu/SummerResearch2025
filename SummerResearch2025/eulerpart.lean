@@ -211,6 +211,7 @@ def OddToDistinct (n : ℕ) : OP n → DistinctPartition n:= by
     dis       := by
       dsimp[dis_parts]
       apply Multiset.nodup_bind.2
+
       refine ⟨?all,?pairwise⟩
       intro a ain
       exact nd_time_const_nd
@@ -221,8 +222,14 @@ def OddToDistinct (n : ℕ) : OP n → DistinctPartition n:= by
 
       dsimp[Multiset.Pairwise]
       refine ⟨?a, ?b⟩
+
       use h.distinct_odd_parts.val.toList
-      simp
+
+      simp only [Multiset.coe_toList]
+
+      simp only [true_and]
+
+      -- simp only [dis_parts]
       have aa: h.distinct_odd_parts.val.toList.Nodup:=by
         exact fsnp_listnp
           (fs:=h.distinct_odd_parts)
@@ -230,12 +237,16 @@ def OddToDistinct (n : ℕ) : OP n → DistinctPartition n:= by
       let f : ℕ → Multiset ℕ :=
         fun y ↦ (binary2 (h.odd_parts.count y)).map (fun z ↦ z * y)
 
+
       apply(List.pairwiseDisjoint_iff_coe_toFinset_pairwise_disjoint
         (l:= h.distinct_odd_parts.val.toList)
         (f:= f)
         (hn:= aa)
       ).1
-      simp
+
+      simp?
+
+
 
       intro h1 h2 h3 h4 h5
       dsimp[Function.onFun]
@@ -256,43 +267,6 @@ def OddToDistinct (n : ℕ) : OP n → DistinctPartition n:= by
       have temp2: ∀ x∈ f h3,
       highest_odd_factor x = highest_odd_factor h3:=by
         sorry
-
-      -- have a1(x: ℕ)(ms:Multiset ℕ)(hms:ms ≤ f h1):
-      -- ∀ x ∈ ms, x % highest_odd_factor h1 = 0 ∧ x % h3 ≠ 0 :=by
-      --   sorry
-      -- have a2(x: ℕ)(ms:Multiset ℕ)(hms:ms ≤ f h3):
-      -- ∀ x ∈ ms , x % h3 = 0 ∧ x % h1 ≠ 0:=by
-      --   sorry
-      -- -- intro c1 c2 c3
-
-      -- by_contra! contr
-      -- rcases contr with ⟨c1,c2 ,c3,c4⟩
-
-      -- have b1: ∀ n ∈ c1, n % h1 = 0 ∧ n % h3 ≠ 0:=by
-      --   exact a1
-      --     (x:=n)
-      --     (ms:=c1)
-      --     (hms:=c2)
-      -- have b2: ∀ n ∈ c1, n % h3 = 0 ∧ n % h1 ≠ 0:=by
-      --   exact a2
-      --     (x:=n)
-      --     (ms:=c1)
-      --     (hms:=c3)
-      -- have b3: ∀ n∈ c1, n % h1 = 0 ∧ n % h1 ≠ 0 := by
-      --   -- ∀ n ∈ c1 proof:
-      --   intro a b
-      --   exact ⟨(b1 a b).left , (b2 a b).right⟩
-      --   --sorry
-      -- intro hh1 hh2 hh3 at c4
-      -- exact (b3 c4).1 (b3 a b).2
-
-
-      -- have b4: (n % h1 ≠ 0) = ¬(n % h1 = 0) := by
-      --   simp
-      -- have b5: ∃ n∈ c1, n % h1 = 0 ∧ n % h1 ≠ 0:=by
-      --   -- constructor
-      --   sorry
-      --tryin gto prove {3,6} and {5} are pairwise disjoint
       --remember its the largest odd factor is different
       --in terms of math
 

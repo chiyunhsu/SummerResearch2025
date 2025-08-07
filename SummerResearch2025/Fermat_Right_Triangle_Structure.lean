@@ -182,9 +182,10 @@ lemma ParamCoprime (gp : GoodParam) (x y : ℕ)
 lemma ParamPy (gp : GoodParam) (x y z : ℕ)
     (hx : x = 2 * gp.p * gp.q) (hy : y = gp.p ^ 2 - gp.q ^ 2) (hz : z = gp.p ^ 2 + gp.q ^ 2) :
     x^2 + y^2 = z^2 := by
-  rw [hx, hy, hz]
-  sorry
-
+  rw [hx, hy, hz, Nat.sq_sub_sq]
+  apply Int.natCast_inj.mp
+  simp[Int.natCast_sub (le_of_lt gp.big)]
+  ring
 
 def ParamToTriple (gp : GoodParam) : PyTriple :=
 {

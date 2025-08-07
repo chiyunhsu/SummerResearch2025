@@ -623,23 +623,14 @@ lemma otd_bij (n:ℕ): (otd n).Bijective := by
     rw [Finset.sum_eq_single a]
     simp only [coe_count, List.count_replicate_self]
     simp only [mem_toFinset, ne_eq, coe_count]
-    intro b hb hba
-    by_contra contra
-
-    have hnotin : b ∈ p1.parts.toFinset := by
-      simp [Multiset.mem_toFinset] at hb
-      exact hb
-
-    have hcnt : Multiset.count b p1.parts = 0 := by
+    intro b hb hne
+    -- If `b` is not equal to `a`, then it does not contribute to the count
+    simp [List.count_replicate]
+    contrapose! hne
+    exact hne.1
+  rw[temp3]
 
 
-
-    -- · rw [Multiset.count_coe_replicate_self]
-    -- · intros b hb hba
-    --   rw [Multiset.count_coe_replicate_of_ne hba.symm]
-    -- · intro hnotin
-    --   rw [Multiset.count_eq_zero_of_not_mem_toFinset hnotin]
-    --   exact Finset.sum_eq_zero hnotin
 
     --   unfold binary
     --   simp[List.map_map]

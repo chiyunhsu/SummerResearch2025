@@ -127,15 +127,17 @@ lemma coprime_diff_sum (gp : GoodParam) : Nat.gcd (gp.p - gp.q) (gp.p + gp.q) = 
   exact coprime_mul hcoprime_2 hcoprime_p
 
 
-lemma ParamCoprime (gp : GoodParam) (x y : ℕ)
-    (hx : x = 2 * gp.p * gp.q)
-    (hy : y = gp.p ^ 2 - gp.q ^ 2):
-    Nat.gcd x y = 1 := by
+lemma ParamCoprime (gp : GoodParam) :
+  --  (x y : ℕ)
+  --  (hx : x = 2 * gp.p * gp.q)
+  --  (hy : y = gp.p ^ 2 - gp.q ^ 2):
+  --  Nat.gcd x y = 1 := by
+  Nat.gcd (2 * gp.p * gp.q) (gp.p ^ 2 - gp.q ^ 2) = 1 := by
 
   let p := gp.p
   let q := gp.q
 
-  rw [hx, hy]
+  --rw [hx, hy]
 
   have hcop : Nat.gcd p q = 1 := gp.coprime
   have hparity := gp.parity
@@ -179,10 +181,12 @@ lemma ParamCoprime (gp : GoodParam) (x y : ℕ)
   exact gcd_xy
 
 
-lemma ParamPy (gp : GoodParam) (x y z : ℕ)
-    (hx : x = 2 * gp.p * gp.q) (hy : y = gp.p ^ 2 - gp.q ^ 2) (hz : z = gp.p ^ 2 + gp.q ^ 2) :
-    x^2 + y^2 = z^2 := by
-  rw [hx, hy, hz, Nat.sq_sub_sq]
+lemma ParamPy (gp : GoodParam)
+    --(x y z : ℕ)
+    --(hx : x = 2 * gp.p * gp.q) (hy : y = gp.p ^ 2 - gp.q ^ 2) (hz : z = gp.p ^ 2 + gp.q ^ 2) :
+    --x^2 + y^2 = z^2 := by
+    : (2 * gp.p * gp.q) ^ 2 + (gp.p ^ 2 - gp.q ^ 2) ^ 2 = (gp.p ^ 2 + gp.q ^ 2) ^ 2 := by
+  rw [Nat.sq_sub_sq]
   apply Int.natCast_inj.mp
   simp[Int.natCast_sub (le_of_lt gp.big)]
   ring
@@ -192,6 +196,14 @@ def ParamToTriple (gp : GoodParam) : PyTriple :=
   x := 2 * gp.p * gp.q,
   y := gp.p ^ 2 - gp.q ^ 2,
   z := gp.p ^ 2 + gp.q ^ 2,
-  coprime := sorry -- lemma to prove
-  py := sorry -- lemma to prove
+  coprime := ParamCoprime gp -- lemma to prove
+  py := ParamPy gp -- lemma to prove
 }
+
+theorem PyTripeToParam (P : PyTriple) : ∃ (gp : GoodParam), P = ParamToTriple gp := by sorry
+
+def Area (P : PyTriple) : ℕ := P.x * P.y / 2
+
+theorem FermatTriangle (P : PyTriple) : ¬ isSquare (Area P) := by
+  rintro ⟨k, hk⟩
+  sorry

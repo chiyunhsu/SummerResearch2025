@@ -512,6 +512,7 @@ lemma dto_bij2 (n:ℕ): (dto n).Bijective := by
 
   sorry
 
+
 lemma otd_bij (n:ℕ): (otd n).Bijective := by
   rw[Function.Bijective]
   constructor
@@ -539,7 +540,8 @@ lemma otd_bij (n:ℕ): (otd n).Bijective := by
 
   set f : ℕ → Multiset ℕ :=fun y ↦ ↑(List.replicate (y / highest_odd_factor y) (highest_odd_factor y))
   with hf
-  have bind_replicate (x k : ℕ) (hpos: 0 < x) (hodd : x % 2 = 1) :((binary k).map (fun y ↦ y * x)).bind f = ↑(List.replicate k x: Multiset ℕ) := by
+  have bind_replicate (x k : ℕ) (hpos: 0 < x) (hodd : x % 2 = 1) :
+  ((binary k).map (fun y ↦ y * x)).bind f = ↑(List.replicate k x: Multiset ℕ) := by
     have hfx : ∀ y ∈ binary n, f (y * x) = List.replicate y x := by
       intro y hy
       rcases two_pow_in_binary n hy with ⟨k, htwo_k⟩
@@ -602,7 +604,7 @@ lemma otd_bij (n:ℕ): (otd n).Bijective := by
     (∑ x ∈ p1.parts.toFinset,(binary (Multiset.count x p1.parts)).map (fun y ↦ y * x)).bind f =
     ∑ x ∈ p1.parts.toFinset,((binary (Multiset.count x p1.parts)).map (fun y ↦ y * x)).bind f := by
       apply sum_bind
-
+--probably there is some way to do a tactic rather than haveing a have ? look at calc tactics
   have map_temp2 :
   (∑ x ∈ p1.parts.toFinset,((binary (Multiset.count x p1.parts)).map (fun y ↦ y * x)).bind f) =
   ∑ x ∈ p1.parts.toFinset, (↑(List.replicate (Multiset.count x p1.parts) x) : Multiset ℕ) := by
@@ -615,30 +617,38 @@ lemma otd_bij (n:ℕ): (otd n).Bijective := by
 
   have temp3:  ∑ x ∈ p1.parts.toFinset, ↑(List.replicate (Multiset.count x p1.parts) x) = p1.parts := by
     ext a
-    by_cases case: a ∈ p1.parts.toFinset
-    ·
+    rw [Multiset.count_sum']
+    -- Now we want to count how many times `a` appears in the sum
+    -- But it appears exactly `Multiset.count a p1.parts` times!
+    rw [Finset.sum_eq_single a]
+    simp only [coe_count, List.count_replicate_self]
+    simp only [mem_toFinset, ne_eq, coe_count]
+    intro b hb hba
+    by_contra contra
+
+    have hnotin : b ∈ p1.parts.toFinset := by
+      simp [Multiset.mem_toFinset] at hb
+      exact hb
+
+    have hcnt : Multiset.count b p1.parts = 0 := by
+
+
+
+    -- · rw [Multiset.count_coe_replicate_self]
+    -- · intros b hb hba
+    --   rw [Multiset.count_coe_replicate_of_ne hba.symm]
+    -- · intro hnotin
+    --   rw [Multiset.count_eq_zero_of_not_mem_toFinset hnotin]
+    --   exact Finset.sum_eq_zero hnotin
+
+    --   unfold binary
+    --   simp[List.map_map]
+    --   simp[Function.comp_def]
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      -- rcases two_pow_in_binary2 n y hy with ⟨k, htwo_k⟩
-      -- rw [hf]
-      -- rw [htwo_k]
     sorry
 
 
@@ -724,12 +734,6 @@ lemma otd_bij (n:ℕ): (otd n).Bijective := by
   -- unfold FromDis FromDis_parts FromOdd FromOdd_parts
 
 
-lemma FromDis_parts_bij (n : ℕ) (P : n.Partition) (hP : P ∈ (distincts n)):
-  -- This lemma needs to be rephrased, as FromDis_parts does not return a Partition, but a Multiset.
-   True := by
-  trivial
-
-
 
 
 -- lemma odd_to_dis_to_odd_id (n : ℕ) (P : n.Partition)(hP : P ∈ (odds n)):
@@ -738,4 +742,4 @@ lemma FromDis_parts_bij (n : ℕ) (P : n.Partition) (hP : P ∈ (distincts n)):
 
 
 -- Euler's identity states that the number of odd partitions of `n` is equal to the number of distinct partitions of `n`.
--- theorem EulerIdentity (n : ℕ) : (odds n).card = (distincts n).card := card_bij' (FromOdd n) (FromDist n) (InDist n) (InOdd n) RightInv LeftInv
+theorem EulerIdentity (n : ℕ) : (odds n).card = (distincts n).card := card_bij' (FromOdd n) (FromDis n) (InDist n) (InOdd n) right_inv left_inv :=by sorry

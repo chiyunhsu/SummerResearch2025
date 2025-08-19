@@ -28,8 +28,9 @@ lemma mem_binary_is_power_of_two {x n : ℕ} : x ∈ binary n → ∃ k, x = 2 ^
   intro h
   unfold binary at h
   simp [List.mem_map] at h
-  rcases h with ⟨k, _, rfl⟩
-  exact ⟨k, rfl⟩
+  rcases h with ⟨wit, hwit1, hwit2⟩
+  use wit
+  exact hwit2.symm
 
 lemma binary_mem_le: 2 ^ i ∈ binary a → 2 ^ i ≤ a := by
   intro h
@@ -613,7 +614,7 @@ lemma left_inv (n : ℕ)(p1 : n.Partition) (h1odd : p1 ∈ odds n) : FromDis n (
   ((binary k).map (fun y ↦ y * x)).bind f = ↑(List.replicate k x: Multiset ℕ) := by
     have hfx : ∀ y ∈ binary n, f (y * x) = List.replicate y x := by
       intro y hy
-      rcases mem_binary_is_power_of_two n hy with ⟨k, htwo_k⟩
+      rcases mem_binary_is_power_of_two hy with ⟨k, htwo_k⟩
       rw[htwo_k]
       rw[hf]
       simp[Nat.mul_comm (n:= 2 ^ k) (m:= x)]
@@ -632,7 +633,7 @@ lemma left_inv (n : ℕ)(p1 : n.Partition) (h1odd : p1 ∈ odds n) : FromDis n (
         simp[Multiset.count_replicate]
         intro b hb
         simp[f]
-        rcases mem_binary_is_power_of_two k b hb with ⟨i, rfl⟩
+        rcases mem_binary_is_power_of_two  hb with ⟨i, rfl⟩
         simp[Nat.mul_comm]
         simp[←hof_same_undermul_2 (n:= x) (x:= i)]
         simp[←hof_odd_eq_itself (n:=x) (hodd:=hodd)]
@@ -651,10 +652,10 @@ lemma left_inv (n : ℕ)(p1 : n.Partition) (h1odd : p1 ∈ odds n) : FromDis n (
         exact (List.count_eq_zero).2 temp
       simp[hcnt]
       intro b hb
-      rcases mem_binary_is_power_of_two k b hb with ⟨i, rfl⟩
+      rcases mem_binary_is_power_of_two hb with ⟨i, rfl⟩
       have hfx2 : ∀ y ∈ binary k, f (y * x) = List.replicate y x := by
         intro y hy
-        rcases mem_binary_is_power_of_two k y hy with ⟨j, rfl⟩
+        rcases mem_binary_is_power_of_two  hy with ⟨j, rfl⟩
         unfold f
         have alg_temp: highest_odd_factor (2 ^ j * x) = highest_odd_factor x := by
           rw[Nat.mul_comm (n:= 2 ^ j) (m:= x)]

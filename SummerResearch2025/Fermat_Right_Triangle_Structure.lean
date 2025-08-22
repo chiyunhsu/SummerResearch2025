@@ -334,7 +334,6 @@ theorem PyTripleToParam (P : PyTriple) : ∃ gp : GoodParam, P = ParamToTriple g
 
   have hz : Odd P.z := zodd P
 
-
   have h_even_sum : Even (P.z + P.y) := Odd.add_odd hz hy
   have h_even_diff : Even (P.z - P.y) := Nat.Odd.sub_odd hz hy
 
@@ -354,10 +353,42 @@ theorem PyTripleToParam (P : PyTriple) : ∃ gp : GoodParam, P = ParamToTriple g
 
   have hab : a * b = 4 * k ^ 2 := hsq_diff
 
+  -- gcd x y = 1, gcd y z = 1
+  -- want to claim gcd (P.z + P.y) (P.z - P.y) ∣ 2
+  -- by parity, claim gcd = 2?
+
   have two_gcd : Nat.gcd a b = 2 := by
     have gcd_xy : Nat.gcd P.x P.y = 1 := P.coprime
     have gcd_yz : Nat.gcd P.y P.z = 1 := coprime_yz P
+
+    let d : ℕ := Nat.gcd a b
+
+    have gcd_dvd_a : d ∣ a := Nat.gcd_dvd_left a b
+    have gcd_dvd_b : d ∣ b := Nat.gcd_dvd_right a b
+
+    have gcd_dvd_sum : d ∣ a + b := Nat.dvd_add gcd_dvd_a gcd_dvd_b
+    have gcd_dvd_diff : d ∣ a - b := Nat.dvd_sub gcd_dvd_a gcd_dvd_b
+
+    rw [ha, hb] at gcd_dvd_sum
+    nth_rewrite 2 [add_comm] at gcd_dvd_sum
+    rw [add_assoc, add_comm, add_assoc, add_comm, Nat.sub_add_cancel (le_of_lt (zbig P)), ← two_mul P.z] at gcd_dvd_sum
+
+    rw [ha, hb, add_comm] at gcd_dvd_diff
+    -- simp [le_of_lt (zbig P)] at gcd_dvd_diff
+
+    #check Nat.sub_sub_self
+
+    -- d ∣ 2y, d ∣ 2z
+    -- dvd_gcd: d ∣ gcd 2y 2z,
+    -- gcd_mul_left gcd mx, my = m * gcd x, y
+    -- coprime yz
+
     sorry
+
+  -- u = (z + y)/2
+  -- v = (z - y)/2
+  -- isSquare u, v since they will be (p^2, q^2) since u * v = k ^ 2 and gcd u v = 1
+  -- set parameters p, q where p = max(p, q)
 
   sorry
 

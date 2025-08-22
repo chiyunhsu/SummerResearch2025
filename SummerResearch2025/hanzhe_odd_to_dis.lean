@@ -16,9 +16,9 @@ variable (P : n.Partition)
 open Nat Partition Multiset Finset
 #check Finset.single_le_sum
 
-lemma odd_is_odd(n:ℕ)(hodd: Odd n) : n % 2 = 1 := by
+lemma odd_is_odd (n : ℕ) (hodd: Odd n) : n % 2 = 1 := by
   unfold Odd at hodd
-  rw[ Nat.mod_def]
+  rw [Nat.mod_def]
   rcases hodd with ⟨q,hq⟩
   omega
 

@@ -18,7 +18,7 @@ open Multiset
 open Finset
 #check Finset.single_le_sum
 
-lemma odd_is_odd(n:ℕ)(hodd: Odd n) : n % 2 = 1 := by
+lemma odd_is_odd (n : ℕ) (hodd: Odd n) : n % 2 = 1 := by
   unfold Odd at hodd
   rw[ Nat.mod_def]
   rcases hodd with ⟨q,hq⟩
@@ -520,109 +520,6 @@ lemma InOdd (n : ℕ) (P : n.Partition) (hP : P ∈ (distincts n)) : (FromDis n 
   have : highest_odd_factor n2 = 2 * (highest_odd_factor n2 / 2) + 1 := by omega
   use highest_odd_factor n2 / 2
 
-
-
---   rw[Function.Bijective]
---   constructor
---   apply Function.HasLeftInverse.injective
---   simp[Function.HasLeftInverse]
---   use otd n
---   unfold Function.LeftInverse
---   unfold dto otd
---   unfold FromDis FromDis_parts FromOdd FromOdd_parts
---   simp only [Subtype.forall, Subtype.mk.injEq]
---   intro p1 h1distinct
---   ext1
---   simp?
---    -- have hf_singleton {y' : ℕ}(hodd : Odd y') (hpos : 0 < y'):
---   -- f y' = ({y'} : Multiset ℕ) := by
---   --   rw [hf]
---   --   have temp: y' % 2 = 1 := by
---   --     apply odd_is_odd
---   --     exact hodd
---   --   simp?
---   --   have temp2: y' / highest_odd_factor y' = 1 := by
---   --     nth_rewrite 1 [←hof_odd_eq_itself (n:= y') (hodd := temp)]
---   --     exact Nat.div_self hpos
---   --   rw[temp2]
---   --   nth_rewrite 1 [←hof_odd_eq_itself (hodd := temp)]
---   --   simp
---   -- let g (y : ℕ) : ℕ := highest_odd_factor y
---   -- have hf_singleton_hof {y' : ℕ}(hodd : Odd y') (hpos : 0 < y') : f y' = ({g y'} : Multiset ℕ) := by
---   --   have temp: y' % 2 = 1 := by
---   --     apply odd_is_odd
---   --     exact hodd
---   --   have hhof : highest_odd_factor y' = y' := by
---   --     rw[ ←hof_odd_eq_itself (hodd := temp)]
---   --   have temp2: y' / highest_odd_factor y' = 1 := by
---   --     nth_rewrite 1 [←hof_odd_eq_itself (n:= y') (hodd := temp)]
---   --     exact Nat.div_self hpos
---   --   -- finish
---   --   simp [f, g, hhof, temp2]
---   -- simp[Finset.sum]
---   -- rw[Multiset.bind]
---   -- apply Multiset.ext.2
---   -- intro a
---   have nodup : p1.parts.Nodup := by
---     simpa [distincts] using (Finset.mem_filter.1 h1distinct).2
---   have each : ∀ x ∈ p1.parts,(binary (Multiset.count x p1.parts)).map (fun y ↦ y * x) = ({x} : Multiset ℕ) := by
---     intro x hx
---     have hcnt : Multiset.count x p1.parts = 1 := by
---       simpa using Multiset.count_eq_one_of_mem nodup hx
---     simp [hcnt, binary, List.replicate, Nat.one_mul]
---   have h_rewrite :(∑ x in p1.parts.toFinset,(binary (Multiset.count x p1.parts)).map (fun y ↦ y * x))= (∑ x in p1.parts.toFinset, ({x} : Multiset ℕ)) := by
---     refine Finset.sum_congr rfl ?_
---     intro x hx
---     have hx' : (x : ℕ) ∈ p1.parts := by
---       simpa [Multiset.mem_toFinset] using hx
---     simp [each x hx']
---   have h_sum_singletons :(∑ x ∈ p1.parts.toFinset, ({x} : Multiset ℕ)) = p1.parts := by
---     simp only [sum_multiset_singleton, toFinset_val]
---     exact Multiset.dedup_eq_self.2 nodup
---   have sum_eq :(∑ x in p1.parts.toFinset,(binary (Multiset.count x p1.parts)).map (fun y ↦ y * x)) = p1.parts := by
---     rw [h_rewrite, h_sum_singletons]
---   set f : ℕ → Multiset ℕ :=
---       fun y ↦ ↑(List.replicate (y / highest_odd_factor y) (highest_odd_factor y)) with hf
---   have hf_singleton {y' : ℕ}(hodd : Odd y') (hpos : 0 < y'):  f y' = ({y'} : Multiset ℕ) := by
---     rw [hf]
---     have temp: y' % 2 = 1 := by
---       apply odd_is_odd
---       exact hodd
---     simp?
---     have temp2: y' / highest_odd_factor y' = 1 := by
---       nth_rewrite 1 [←hof_odd_eq_itself (n:= y') (hodd := temp)]
---       exact Nat.div_self hpos
---     rw[temp2]
---     nth_rewrite 1 [←hof_odd_eq_itself (hodd := temp)]
---     simp
---   have h_bind_id : p1.parts.bind f = p1.parts := by
---     have temp1: ∀ x ∈ p1.parts, f x = ({x} : Multiset ℕ) := by
---       intro x hx
---       have hodd : Odd x := by
---         apply odd_is_odd
---         exact (Finset.mem_filter.1 h1distinct).1 hx
---       have hpos : 0 < x := by
---         apply P.parts_pos
---         exact Multiset.mem_toFinset.mp hx
---       exact hf_singleton hodd hpos
---     apply Multiset.bind_singleton
-
-
---   apply Function.HasRightInverse.surjective
---   use otd n
---   unfold Function.RightInverse
---   unfold dto otd
---   unfold FromDis FromDis_parts FromOdd FromOdd_parts
---   simp only [Subtype.forall, Subtype.mk.injEq]
---   intro p1
---   ext1
---   simp
---   rcases p1 with ⟨p1_parts, p1_odd⟩
---   ext1
---   simp
-
-  sorry
-
 lemma sum_map_ite_filter{α} [DecidableEq α] {s : Multiset α} (p : α → Prop) [DecidablePred p] (f : α → ℕ) :
   (s.map (fun a => if p a then f a else 0)).sum = ((s.filter p).map f).sum := by
   classical
@@ -928,25 +825,6 @@ lemma count_map_binary_eq_if {x a k c : ℕ} (hxpos : x ≠ 0) (hk : a = x * 2 ^
       exact Multiset.count_eq_zero.mpr this
     simpa [hmem] using hcount
 
--- lemma count_formula {n x : ℕ} {p1 : n.Partition}{B : Multiset ℕ} (hB :  B = p1.parts.bind (fun y => ↑(List.replicate (y / highest_odd_factor y) (highest_odd_factor y)))) :
---   Multiset.count x B  = ((p1.parts.filter (fun y => highest_odd_factor y = x)).map (fun y => y / x)).sum := by
---   simp [hB, Multiset.count_bind]
---   induction p1.parts using Multiset.induction with
---   | empty =>
---       simp
---   | @cons y s ih =>
---       by_cases h : highest_odd_factor y = x
---       ·
---         simp [h, ih]
---       ·
---         simp [h, ih]
---         simp[←Multiset.coe_count]
---         intro h1 h2
---         by_contra contra
---         sorry
-
-
-
 
 lemma temp(hnonzero: x_1 ≠ 0):∃ k, (List.replicate (x_1 / highest_odd_factor x_1) (highest_odd_factor x_1)) = (List.replicate (2 ^ k) (highest_odd_factor x_1)) := by
   simp [List.replicate, highest_odd_factor, Nat.div_eq_iff, Nat.mul_comm]
@@ -990,7 +868,98 @@ lemma temp2(n:ℕ) (p1:Partition n)(parts_nonzero : ∀ x_1 ∈ p1.parts, x_1 �
   specialize parts_nonzero x2 hx2
   exact parts_nonzero
 
+lemma count_replicate_hof
+    (x x₁ : ℕ) :
+  List.count x
+      (List.replicate (2 ^ perExp x₁) (highest_odd_factor x₁))
+    =
+  if highest_odd_factor x₁ = x then 2 ^ perExp x₁ else 0 := by
+  by_cases h : highest_odd_factor x₁ = x
+  ·  -- the replicated element *is* `x`
+    subst h                        -- rewrite with `x`
+    simp [List.count_replicate]    -- `count x (replicate n x) = n`
+  ·  -- the replicated element is *not* `x`
+    have hne : highest_odd_factor x₁ ≠ x := h
+    simp [List.count_replicate, hne]      -- the count is `0`
 
+lemma sum_pow_eq_count
+    {n x k a c : ℕ} {p1 : n.Partition}
+    (hp  : p1 ∈ distincts n)
+    (hax : highest_odd_factor a = x)
+    (hk  : x * 2 ^ k = a)
+    (hpart : x % 2 = 1)      -- `x` odd because it is a highest odd factor
+    (hB : B = p1.parts.bind (fun y ↦ ↑(List.replicate (y / highest_odd_factor y) (highest_odd_factor y))))
+    (hc : c = Multiset.count x B)
+    : ∑ y ∈ (p1.parts.filter (fun y ↦ highest_odd_factor y = x)).toFinset, 2 ^ perExp y =
+  Multiset.count x (p1.parts.bind (fun y ↦ ↑(List.replicate (y / highest_odd_factor y) (highest_odd_factor y)))) :=by
+  have : (Multiset.count x (p1.parts.bind (fun y ↦ ↑(List.replicate (y / highest_odd_factor y) (highest_odd_factor y)))))
+  = ∑ y ∈ (p1.parts.filter (fun z ↦ highest_odd_factor z = x)).toFinset, if h : highest_odd_factor y = x then y / x else 0 := by
+    simp[Multiset.count_eq_card_filter_eq]
+
+
+  -- 2. compute each summand: `count x (replicateHof y …)`
+  have h₂ :
+      (fun y ↦ (replicateHof y : Multiset ℕ).count x)
+        =
+      (fun y ↦
+        if h : highest_odd_factor y = x
+        then y / x else 0) := by
+    funext y
+    by_cases h : highest_odd_factor y = x
+    · -- the replicated element *is* `x`
+      have : (replicateHof y : Multiset ℕ).count x = y / x := by
+        simp [replicateHof, h, Multiset.count_replicate, mul_comm]
+      simpa [h] using this
+    · -- the replicated element is *not* `x`
+      have : (replicateHof y : Multiset ℕ).count x = 0 := by
+        simp [replicateHof, h, Multiset.count_replicate] at *
+      simpa [h] using this
+
+  -- 3. substitute  h₂  into the sum expression obtained in step 1
+  simpa [h₂] using h₁
+    simp [Multiset.bind_eq_sum_attach]
+
+lemma testBit_sum_distinct
+    {ms : Multiset ℕ} {k : ℕ}
+    (hpow : (2 ^ k : ℕ) ∈ ms)
+    (hpair : ms.Nodup) :
+    ms.sum.testBit k = true := by
+  -- Split the sum into `2^k + rest`
+  obtain ⟨ms', rfl⟩ := (exists_cons_of_mem hpow)
+  have hdis : (¬(ms'.map (fun t : ℕ => t.testBit k)).any id) := by
+    -- Every other term is a *different* power, hence bit k is 0
+    have : ∀ t ∈ ms', t.testBit k = false := by
+      intro t ht
+      have hneq : t ≠ 2 ^ k := by
+        intro h
+        have : 2 ^ k ∈ ms'.erase (2 ^ k) := by
+          simpa [h] using ht
+        exact (hpair.subset (ms'.erase_subset _)).ne this
+      -- `testBit` for a power of two is 1 *only* on its own index
+      have : t.testBit k = (t = 2 ^ k) := by
+        rcases Nat.exists_eq_pow_of_two_le t.is_pow with ⟨j, rfl⟩
+        by_cases h' : j = k <;> simp [h', testBit_pow_self]
+      simpa [this, hneq] using this
+    -- hence the whole `any` is false
+    simp [this]
+  -- Now use `Nat.testBit_add`
+  simpa [sum_cons, testBit_pow_self, hdis]
+    using Nat.testBit_add (2^k) ms'.sum
+
+lemma sum_pow_log_comp
+    (m := (p1.parts : Multiset ℕ)) :
+    (map (fun x : ℕ => 2 ^ x) ((map (fun x => Nat.log 2 (x / highest_odd_factor x)) m).dedup)).sum
+  = (map (fun x => 2 ^ Nat.log 2 (x / highest_odd_factor x)) m).dedup.sum := by
+  -- move `map` across `dedup` using injectivity of `pow`
+  have := (map_dedup _ pow_two_injective).symm
+              (map (fun x => Nat.log 2 (x / highest_odd_factor x)) m)
+  -- `map_dedup` gave:  `map pow (map g m).dedup = (map pow (map g m)).dedup`
+  -- use `map_map` to turn RHS into one composite map
+  simpa [map_map, Function.comp] using congrArg Multiset.sum this
+
+lemma pow_inj: Function.Injective (fun n : ℕ => (2 : ℕ) ^ n) := by
+  intro a b hab
+  sorry
 lemma part_iff_bit2
     {n x k a c : ℕ} {p1 : n.Partition}
     (hp  : p1 ∈ distincts n)
@@ -1005,14 +974,65 @@ lemma part_iff_bit2
   intro hamem
   simp[hc]
   simp[hB]
+  -- go from the fact that it is distinct to the fact there must appear one of them
   simp[Multiset.count_bind]
   rw[temp2]
+  -- simp[binary]
   simp[binary]
-  have nod: (Multiset.map (fun x_1 => List.count x (List.replicate (2 ^ perExp x_1) (highest_odd_factor x_1)))
-        p1.parts).Nodup:= by sorry
+       -- power is injective and nodup to beginwith
+  simp[count_replicate_hof]
+  -- proving k is distinct is the same as 2^k is distinct
+  simp[Nat.bitIndices_twoPowsum]
 
-    -- power is injective and nodup to beginwith
-  -- simp[Finset.twoPowSum_toFinset_bitIndices]
+
+  --perExp = log2 (y / hof y) = (k in the 2^k = y / hof y)
+  have: ∑ i ∈ (Multiset.map (fun x_1 => perExp x_1) p1.parts).toFinset, 2 ^ i = c := by
+    simp[hc]
+    simp[hB]
+    simp[perExp]
+    simp[Finset.sum]
+
+    have  : (Multiset.map (fun x : ℕ => 2 ^ x) ((Multiset.map (fun x => Nat.log 2 (x / highest_odd_factor x)) p1.parts)).dedup).sum
+          =  ((Multiset.map (fun x => (2 ^ (Nat.log 2 (x / highest_odd_factor x)))) p1.parts).dedup.sum) := by
+      have h1:  (map (fun k => (2 : ℕ) ^ k)
+            ((map (fun x => Nat.log 2 (x / highest_odd_factor x)) p1.parts).dedup))
+          =
+        (map (fun k => (2 : ℕ) ^ k)
+            (map (fun x => Nat.log 2 (x / highest_odd_factor x)) p1.parts)).dedup := by
+        -- apply Multiset.dedup_map_of_injective
+        set ms:= (Multiset.map (fun x => log 2 (x / highest_odd_factor x)) p1.parts) with hms
+        simpa using (Multiset.dedup_map_of_injective pow_inj ms).symm
+      have h2:
+        map (fun k => (2 : ℕ) ^ k)
+            (map (fun x => Nat.log 2 (x / highest_odd_factor x)) p1.parts)
+          =
+        map (fun x => (2 : ℕ) ^ Nat.log 2 (x / highest_odd_factor x)) p1.parts := by
+        simpa [Multiset.map_map, Function.comp] using rfl
+      simp[h1,h2]
+    simp[this]
+    have:  (Multiset.map (fun x => 2 ^ log 2 (x / highest_odd_factor x)) p1.parts).dedup.sum
+      = (Multiset.map (fun x => (x / highest_odd_factor x)) p1.parts).dedup.sum := by
+      have hmap : map (fun x : ℕ =>
+                2 ^ Nat.log 2 (x / highest_odd_factor x)) p1.parts = map (fun x : ℕ => x / highest_odd_factor x) p1.parts := by
+        refine map_congr rfl ?_
+        intro y hy
+        have hypos : 0 < y := p1.parts_pos hy
+        have h_nozero: y≠ 0:= by
+          intro h
+          exact hypos.ne' h
+        rcases hof_divid_n_2tosomepow (n:=y) h_nozero with ⟨k,hk⟩
+        simp[←hk]
+        simp[Nat.log_pow]
+      simp[hmap]
+    simp[this]
+    let g(y : ℕ)(x:ℕ):= if highest_odd_factor y = x then y / x else 0
+
+
+
+--Multiset.count_eq_card_filter_eq
+--above is an important theorem
+
+  simp[Finset.twoPowSum_toFinset_bitIndices]
   sorry
   sorry
 
@@ -1063,7 +1083,7 @@ lemma map_binary_eq_filter2 (p1 : Partition n) (hp: p1 ∈ distincts n) {x : ℕ
       refine Multiset.count_eq_zero.mpr ?_
       intro hmem
       rcases Multiset.mem_map.1 hmem with ⟨w, hw, rfl⟩
-      rcases two_pow_in_binary (x:=w) (n:= (Multiset.count x B)) hw with ⟨j, hj⟩
+      rcases two_pow_in_binary2 (ha:=hw)  with ⟨j, hj⟩
       have : highest_odd_factor (w * x) = x := by
         have xodd: x% 2 =1:= by
           apply odd_of_mem_B
@@ -1083,6 +1103,7 @@ lemma right_in3 (n : ℕ) (p1 : n.Partition) (hb : p1 ∈ distincts n) : FromOdd
   unfold FromDis FromOdd FromOdd_parts FromDis_parts
   ext1
   simp only [Subtype.forall, Subtype.mk.injEq]
+
   -- ext a
   set B : Multiset ℕ := p1.parts.bind (fun y => ↑(List.replicate (y / highest_odd_factor y) (highest_odd_factor y))) with hB
   have nodup_parts : p1.parts.Nodup := by
@@ -1094,6 +1115,7 @@ lemma right_in3 (n : ℕ) (p1 : n.Partition) (hb : p1 ∈ distincts n) : FromOdd
     constructor
     exact p1.parts_pos hx
     exact Nat.ne_of_gt (p1.parts_pos hx)
+
   have rhs_rewrite : (p1.parts : Multiset ℕ) = ∑ x ∈ (B).toFinset, p1.parts.filter (fun y ↦ highest_odd_factor y = x) := by
     have hof_mem : ∀ {y : ℕ}, y ∈ p1.parts → highest_odd_factor y ∈ (B).toFinset := by
       intro y hy
@@ -1112,11 +1134,75 @@ lemma right_in3 (n : ℕ) (p1 : n.Partition) (hb : p1 ∈ distincts n) : FromOdd
       exact hof_mem hy
     rw[rhs_rw_lemma (n:=n) (B:=B) (p1:=p1), parts_eq_filter]
   rw[rhs_rewrite]
+
+
+
+
+
   apply Finset.sum_congr
+
   rfl
+
   intro x hx
   simp[map_binary_eq_filter2 (n:=n) (p1:=p1) (hp:=hb) (x:=x) (B:=B) (hB:=hB) (hx:=hx)]
 
+
+lemma right_in4 (n : ℕ) (p1 : n.Partition) (hb : p1 ∈ distincts n) : FromOdd n (FromDis n p1 hb) (InOdd n p1 hb) = p1 := by
+  unfold FromDis FromOdd FromOdd_parts FromDis_parts
+  ext1
+  simp only [Subtype.forall, Subtype.mk.injEq]
+  set B : Multiset ℕ := p1.parts.bind (fun y => ↑(List.replicate (y / highest_odd_factor y) (highest_odd_factor y))) with hB
+  have nodup_parts : p1.parts.Nodup := by
+    simpa [distincts] using (Finset.mem_filter.1 hb).2
+  have p1_parts_dedup : p1.parts.dedup = p1.parts := by
+    apply Multiset.dedup_eq_self.2 nodup_parts
+  have p1_parts_pos_and_non_zero : ∀ x ∈ p1.parts, 0 < x ∧ x ≠ 0 := by
+    intro x hx
+    constructor
+    exact p1.parts_pos hx
+    exact Nat.ne_of_gt (p1.parts_pos hx)
+
+  have rhs_rewrite : (p1.parts : Multiset ℕ) = ∑ x ∈ (B).toFinset, p1.parts.filter (fun y ↦ highest_odd_factor y = x) := by
+    have hof_mem : ∀ {y : ℕ}, y ∈ p1.parts → highest_odd_factor y ∈ (B).toFinset := by
+      intro y hy
+      have : (highest_odd_factor y) ∈ (B) := by
+        have : (highest_odd_factor y) ∈ (↑(List.replicate (y / highest_odd_factor y) (highest_odd_factor y)) : Multiset ℕ) := by
+          simp?
+          constructor
+          rcases p1_parts_pos_and_non_zero y hy with ⟨hpos, hneq0⟩
+          exact hof_zero_iff_n_zero.not.1 hneq0
+          exact hof_le_n
+        exact Multiset.mem_bind.2 ⟨y, hy, this⟩
+      exact Multiset.mem_toFinset.2 this
+    have parts_eq_filter : (p1.parts.filter (fun y ↦ highest_odd_factor y ∈ (B).toFinset)) = p1.parts := by
+      apply Multiset.filter_eq_self.2
+      intro y hy
+      exact hof_mem hy
+    rw[rhs_rw_lemma (n:=n) (B:=B) (p1:=p1), parts_eq_filter]
+  rw[rhs_rewrite]
+
+
+
+
+
+lemma RightInv {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) :
+  FromOdd (FromDist Q Q_dist) (InOdd Q Q_dist) = Q := by
+  ext b
+  simp [FromOdd, FromOdd_parts]
+  simp [Multiset.count_sum']
+  have Q_Nodup : Q.parts.Nodup := by
+    simp [distincts] at Q_dist
+    exact Q_dist
+  by_cases hb : b ∈ Q.parts
+  · rw [Multiset.count_eq_one_of_mem Q_Nodup hb]
+
+  · rw [Multiset.count_eq_zero_of_notMem hb]
+    have FromOdd_empty : FromOdd Q = 0 := by
+      unfold FromOdd
+      apply Multiset.count_eq_zero_of_notMem at hb
+      simp [hb, binary]
+    rw [FromOdd_empty] at hb
+    contradiction
 
 
 

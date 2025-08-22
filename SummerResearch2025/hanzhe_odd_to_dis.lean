@@ -1,10 +1,10 @@
 import Mathlib
-/-
-import Mathlib.Combinatorics.Enumerative.Partition
-import Mathlib.Data.Finset.Card
-import Mathlib.Data.Nat.Digits
-import Mathlib.Data.Multiset.Count
-import Mathlib.Data.Nat.Bitindices
+
+/-!
+# Euler's Identity for Integer Partitions
+
+This file proves Euler's famous identity: the number of partitions of n into odd parts
+equals the number of partitions of n into distinct parts.
 -/
 
 variable (n : ℕ)
@@ -13,48 +13,24 @@ variable (P : n.Partition)
 #check P.parts_pos
 #check P.parts_sum
 
-open Nat Partition
-open Multiset
-open Finset
+open Nat Partition Multiset Finset
 #check Finset.single_le_sum
 
 lemma odd_is_odd (n : ℕ) (hodd: Odd n) : n % 2 = 1 := by
   unfold Odd at hodd
-  rw[ Nat.mod_def]
+  rw [Nat.mod_def]
   rcases hodd with ⟨q,hq⟩
   omega
 
 def binary (n : ℕ): Multiset ℕ := n.bitIndices.map fun i => 2 ^ i
 
-lemma two_pow_in_binary: x ∈ binary n → ∃  (a : ℕ), x = 2 ^ a := by
-  intro ha
-  unfold binary at ha
-  simp[List.mem_map] at ha
-  rcases ha with ⟨wit, hwit1, hwit2⟩
+lemma mem_binary_is_power_of_two {x n : ℕ} : x ∈ binary n → ∃ k, x = 2 ^ k := by
+  intro h
+  unfold binary at h
+  simp [List.mem_map] at h
+  rcases h with ⟨wit, hwit1, hwit2⟩
   use wit
   exact hwit2.symm
-
-lemma two_pow_in_binary2(a:ℕ)(ha:a∈ binary n): ∃k,a = (2 ^k):=by
-  unfold binary at ha
-  simp[List.mem_map] at ha
-  rcases ha with ⟨wit,hwit1,hwit2⟩
-  use wit
-  exact hwit2.symm
-
--- lemma pow_mem_binary (k : ℕ) :  2 ^ k ∈ binary (2 ^ k) ∧  Multiset.count (2 ^ k) (binary (2 ^ k)) = 1 := by
---   -- `bitIndices` of `2 ^ k` is the singleton `[k]`
---   have hidx : (2 ^ k).bitIndices = [k] := by
---     exact Nat.bitIndices_two_pow k
---   -- after `map (fun i ↦ 2^i)` that becomes a singleton multiset
---   have hb : binary (2 ^ k) = {2 ^ k} := by
---     unfold binary; simpa [hidx] using rfl
---   -- membership and count are now immediate
---   have : 2 ^ k ∈ ({2 ^ k} : Multiset ℕ) := by simp
---   have : (2 ^ k ∈ binary (2 ^ k))
---         ∧ Multiset.count (2 ^ k) (binary (2 ^ k)) = 1 := by
---     simpa [hb] using
---       And.intro (by simpa using this) (by simp [hb])
---   exact this
 
 lemma binary_mem_le: 2 ^ i ∈ binary a → 2 ^ i ≤ a := by
   intro h
@@ -62,19 +38,12 @@ lemma binary_mem_le: 2 ^ i ∈ binary a → 2 ^ i ≤ a := by
   simp[List.mem_map] at h
   exact Nat.two_pow_le_of_mem_bitIndices h
 
--- lemma pow_mem_binary_bit {n k : ℕ} (hbit : n.testBit k = true) : 2 ^ k ∈ binary n ∧ Multiset.count (2 ^ k) (binary n) = 1 := by
---   constructor
---   simp [binary, List.mem_map, hbit]
---   sorry
---   simp [binary, hbit]
---   simp [List.mem_map, Nat.pow_right_injective (le_refl 2)]
---   sorry
-
 lemma mem_binary_iff {k i : ℕ} : (2 ^ i) ∈ binary k ↔ k.testBit i := by
   constructor
   simp [binary, List.mem_map]
   sorry
   sorry
+
 lemma exists_pow_of_mem_binary {k w : ℕ} :
   w ∈ binary k → ∃ i, w = 2 ^ i ∧ k.testBit i := by sorry
 
@@ -104,8 +73,7 @@ lemma hof_is_odd {n:ℕ} (hn_nonzero: n ≠ 0) : highest_odd_factor n % 2 = 1 :=
     simp[c]
     have nsuccle: (n' + 1) / 2 < n' + 1 := by omega
     have nsuccnonzero: (n' + 1) / 2 ≠ 0 := by omega
-    rcases ih ((n' + 1) / 2) nsuccle nsuccnonzero with h
-    exact h
+    exact ih ((n' + 1) / 2) nsuccle nsuccnonzero
 
 lemma n_non0_hof_non0 {n:ℕ} (hn_nonzero:n ≠ 0): highest_odd_factor n ≠ 0:=by
   induction' n using Nat.strong_induction_on with n ih
@@ -127,10 +95,10 @@ lemma hof_zero_iff_n_zero{n:ℕ} :n = 0 ↔ highest_odd_factor n = 0:=by
   rw[h]
   simp[highest_odd_factor]
   contrapose
-  exact n_non0_hof_non0 (n:= n)
+  exact n_non0_hof_non0
 
 lemma hof_odd_eq_itself{n:ℕ}(hodd:n % 2 = 1):n = highest_odd_factor n :=by
-  induction' n using Nat.strong_induction_on with n in'
+  induction' n using Nat.strong_induction_on with n ih
   cases n with
   | zero    =>
   simp[highest_odd_factor]
@@ -179,29 +147,6 @@ lemma hof_same_undermul_2{n:ℕ}: highest_odd_factor n = highest_odd_factor (n *
     apply ix
     simp
 
-lemma n_non0_hof_odd (hn_nonzero:n ≠ 0): highest_odd_factor n % 2 = 1 :=by
-  induction' n using Nat.strong_induction_on with n ih
-  cases n with
-  | zero    =>
-  contradiction
-  | succ n' =>
-    unfold highest_odd_factor
-    by_cases c: n'.succ % 2 =1
-    simp[c]
-    simp[c]
-    have temp: (n'.succ / 2) < (n' + 1) := by omega
-    have temp2: (n'.succ / 2) ≠ 0 := by omega
-    apply ih (n'.succ / 2) temp temp2
-
-lemma hof_non0_n_odd: n % 2 =1 → highest_odd_factor n ≠ 0:=by
-  intro h
-  rw[Nat.mod_def] at h
-  have temp: n = 1 + 2 *(n/2) :=by omega
-  have temp2 : 1 + 2 *(n/2) ≠ 0 :=by omega
-  rw[temp]
-  apply (hof_zero_iff_n_zero).not.1
-  exact temp2
-
 lemma hof_even_is_0 (n:ℕ)(h: (highest_odd_factor n) % 2 = 0): highest_odd_factor n = 0 :=by
   by_cases c: n = 0
   rw[c]
@@ -211,7 +156,7 @@ lemma hof_even_is_0 (n:ℕ)(h: (highest_odd_factor n) % 2 = 0): highest_odd_fact
   have temp: n ≠ 0 := by
     exact hof_zero_iff_n_zero.not.2 c
   have temp2: highest_odd_factor n % 2 = 1:= by
-    exact n_non0_hof_odd (hn_nonzero:=temp)
+    exact hof_is_odd (hn_nonzero:=temp)
   rw[h] at temp2
   contradiction
 
@@ -566,7 +511,7 @@ lemma left_inv (n : ℕ)(p1 : n.Partition) (h1odd : p1 ∈ odds n) : FromDis n (
   ((binary k).map (fun y ↦ y * x)).bind f = ↑(List.replicate k x: Multiset ℕ) := by
     have hfx : ∀ y ∈ binary n, f (y * x) = List.replicate y x := by
       intro y hy
-      rcases two_pow_in_binary n hy with ⟨k, htwo_k⟩
+      rcases mem_binary_is_power_of_two hy with ⟨k, htwo_k⟩
       rw[htwo_k]
       rw[hf]
       simp[Nat.mul_comm (n:= 2 ^ k) (m:= x)]
@@ -585,7 +530,7 @@ lemma left_inv (n : ℕ)(p1 : n.Partition) (h1odd : p1 ∈ odds n) : FromDis n (
         simp[Multiset.count_replicate]
         intro b hb
         simp[f]
-        rcases two_pow_in_binary2 k b hb with ⟨i, rfl⟩
+        rcases mem_binary_is_power_of_two  hb with ⟨i, rfl⟩
         simp[Nat.mul_comm]
         simp[←hof_same_undermul_2 (n:= x) (x:= i)]
         simp[←hof_odd_eq_itself (n:=x) (hodd:=hodd)]
@@ -604,10 +549,10 @@ lemma left_inv (n : ℕ)(p1 : n.Partition) (h1odd : p1 ∈ odds n) : FromDis n (
         exact (List.count_eq_zero).2 temp
       simp[hcnt]
       intro b hb
-      rcases two_pow_in_binary2 k b hb with ⟨i, rfl⟩
+      rcases mem_binary_is_power_of_two hb with ⟨i, rfl⟩
       have hfx2 : ∀ y ∈ binary k, f (y * x) = List.replicate y x := by
         intro y hy
-        rcases two_pow_in_binary2 k y hy with ⟨j, rfl⟩
+        rcases mem_binary_is_power_of_two  hy with ⟨j, rfl⟩
         unfold f
         have alg_temp: highest_odd_factor (2 ^ j * x) = highest_odd_factor x := by
           rw[Nat.mul_comm (n:= 2 ^ j) (m:= x)]
@@ -1083,7 +1028,11 @@ lemma map_binary_eq_filter2 (p1 : Partition n) (hp: p1 ∈ distincts n) {x : ℕ
       refine Multiset.count_eq_zero.mpr ?_
       intro hmem
       rcases Multiset.mem_map.1 hmem with ⟨w, hw, rfl⟩
+<<<<<<< HEAD
       rcases two_pow_in_binary2 (ha:=hw)  with ⟨j, hj⟩
+=======
+      rcases mem_binary_is_power_of_two(x:=w) (n:= (Multiset.count x B)) hw with ⟨j, hj⟩
+>>>>>>> 832c9c063a0f6a9b51f1306cb12255f3d253fa48
       have : highest_odd_factor (w * x) = x := by
         have xodd: x% 2 =1:= by
           apply odd_of_mem_B

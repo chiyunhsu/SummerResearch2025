@@ -260,6 +260,12 @@ lemma InDist {n : ℕ} (P : n.Partition) (P_odd : P ∈ (odds n)) : FromOdd P P_
 def FromDistPart (b : ℕ) : Multiset ℕ :=
   Multiset.replicate (2 ^ (Nat.factorization b 2)) (hof b)
 
+def Same_hof {n : ℕ} (P : n.Partition) (a : ℕ) : Multiset ℕ := (Multiset.filter (fun b ↦ (hof b = a)) P.parts)
+
+def FromDistPart' {n : ℕ} (P : n.Partition) (a : ℕ) : Multiset ℕ :=
+--Multiset.bind (Multiset.filter (fun b ↦ (hof b = a)) P.parts) (FromDistPart)
+Multiset.replicate (Multiset.map (fun b ↦ ordProj[2] b) (Same_hof P a)).sum a
+
 -- Each part in the multiset `FromDistPart` is positive
 lemma FromDistPart_pos {n : ℕ} (Q : n.Partition) (b : ℕ) (hb : b ∈ Q.parts) {a : ℕ} :
     a ∈ (FromDistPart b) → a > 0 := by
@@ -279,6 +285,13 @@ lemma FromDistPart_sum (b : ℕ) : (FromDistPart b).sum = b := by
   by_cases b_zero : b = 0
   · simp [hof, b_zero]
   · rw [two_pow_mul_hof_eq_self b]
+
+lemma FromDistPart'_sum {n : ℕ} (P : n.Partition) (a : ℕ) : (FromDistPart' P a).sum = (Same_hof P a).sum := by
+  unfold FromDistPart'
+  simp only [Multiset.sum_replicate, smul_eq_mul]
+  rw [← Multiset.sum_map_mul_right]
+
+
 
 -- Map from (distinct) partitions to (odd) partitions, only as a multiset : the union of `FromDistPart` of a part `a`
 def FromDist_parts {n : ℕ} (Q : n.Partition) : Multiset ℕ :=

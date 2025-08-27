@@ -10,10 +10,10 @@ def isSquare (n : ℕ) : Prop :=
 structure GoodParam where
   p : ℕ
   q : ℕ
-  big : p > q
+  pbig : q < p
   coprime : Nat.gcd p q = 1
   parity : (Even p ∧ Odd q) ∨ (Odd p ∧ Even q)
-  positive : q > 0
+  positive : 0 < q
 
 -- x, y, z, parity, coprime, py
 structure PyTriple where
@@ -23,7 +23,7 @@ structure PyTriple where
   parity : Even x
   coprime : Nat.gcd x y = 1
   py : x^2 + y^2 = z^2
-  nonzero : x > 0
+  nonzero : 0 < x
 
 def Area (P : PyTriple) : ℕ :=
   P.x * P.y / 2
@@ -122,6 +122,31 @@ lemma zbig (P : PyTriple) : P.y < P.z := by
   exact hne
 
 
+lemma ypos (P : PyTriple) : 0 < P.y := by
+  by_contra h
+  push_neg at h
+  -- h : P.y ≤ 0
+  have hy0 : P.y = 0 := Nat.eq_zero_of_le_zero h
+  -- rewrite P.y to 0 in the Odd hypothesis
+  have hyodd : Odd P.y := yodd P
+  rw [hy0] at hyodd
+  -- now yodd P : Odd 0
+  exact Nat.not_odd_zero hyodd
+
+lemma zpos (P : PyTriple) : 0 < P.z := by
+  have x2_pos : 0 < P.x ^ 2 := sq_pos_of_pos P.nonzero
+  have sum_pos : 0 < P.x ^ 2 + P.y ^ 2 := by
+    rw [Nat.add_pos_iff_pos_or_pos]
+    left
+    exact x2_pos
+  -- z^2 = x^2 + y^2
+  rw [P.py] at sum_pos
+  -- now sum_pos : 0 < P.z ^ 2
+  obtain hpos | hzero := Nat.pow_pos_iff.mp sum_pos
+  · exact hpos
+  · exfalso
+    norm_num at hzero
+
 lemma odd_coprime_two {a : ℕ} (h : Odd a) : Nat.gcd a 2 = 1 := by
   let g : ℕ := Int.gcd a 2
 
@@ -153,9 +178,9 @@ lemma opp_parity_odd_diff (gp : GoodParam) :
     Odd (gp.p - gp.q) := by
   rcases gp.parity with ⟨hp, hq⟩ | ⟨hp, hq⟩
   · -- Case: p even, q odd
-    apply Nat.Even.sub_odd (le_of_lt gp.big) hp hq
+    apply Nat.Even.sub_odd (le_of_lt gp.pbig) hp hq
   · -- Case: p odd, q even
-    apply Nat.Odd.sub_even (le_of_lt gp.big) hp hq
+    apply Nat.Odd.sub_even (le_of_lt gp.pbig) hp hq
 
 
 theorem coprime_mul {a b c : ℕ} (hab : Nat.gcd a b = 1) (hac : Nat.gcd a c = 1) :
@@ -195,7 +220,7 @@ lemma coprime_p_sum (gp : GoodParam) : Nat.gcd gp.p (gp.p + gp.q) = 1 := by
   exact gp.coprime
 
 lemma coprime_p_diff (gp : GoodParam) : Nat.gcd gp.p (gp.p - gp.q) = 1 := by
-  rw [Nat.gcd_comm, Nat.gcd_self_sub_left (Nat.le_of_lt gp.big), Nat.gcd_comm]
+  rw [Nat.gcd_comm, Nat.gcd_self_sub_left (Nat.le_of_lt gp.pbig), Nat.gcd_comm]
   exact gp.coprime
 
 lemma coprime_q_sum (gp : GoodParam) : Nat.gcd gp.q (gp.p + gp.q) = 1 := by
@@ -203,7 +228,7 @@ lemma coprime_q_sum (gp : GoodParam) : Nat.gcd gp.q (gp.p + gp.q) = 1 := by
   exact gp.coprime
 
 lemma coprime_q_diff (gp : GoodParam) : Nat.gcd gp.q (gp.p - gp.q) = 1 := by
-    rw [Nat.gcd_sub_self_right (Nat.le_of_lt gp.big), Nat.gcd_comm]
+    rw [Nat.gcd_sub_self_right (Nat.le_of_lt gp.pbig), Nat.gcd_comm]
     exact gp.coprime
 
 lemma coprime_diff_sum (gp : GoodParam) : Nat.gcd (gp.p - gp.q) (gp.p + gp.q) = 1 := by
@@ -211,7 +236,7 @@ lemma coprime_diff_sum (gp : GoodParam) : Nat.gcd (gp.p - gp.q) (gp.p + gp.q) = 
   let q := gp.q
 
   have hpbig : q ≤ p := by
-    exact Nat.le_of_lt gp.big
+    exact Nat.le_of_lt gp.pbig
 
   rw [← Nat.gcd_add_self_right (p - q) (p + q), add_comm, tsub_add_eq_add_tsub hpbig, ← add_assoc p p q, add_tsub_cancel_right, ← two_mul]
   have h_parity : Odd (p - q) := opp_parity_odd_diff gp
@@ -222,6 +247,25 @@ lemma coprime_diff_sum (gp : GoodParam) : Nat.gcd (gp.p - gp.q) (gp.p + gp.q) = 
     rw [Nat.gcd_comm]
     exact coprime_p_diff gp
   exact coprime_mul hcoprime_2 hcoprime_p
+
+lemma coprime_square_product {a b : ℕ}
+    (hcoprime : Nat.gcd a b = 1)
+    (hsquare : isSquare (a * b)):
+    isSquare a ∧ isSquare b := by
+
+  obtain ⟨c, hc⟩ := hsquare
+
+  have ha := sq_of_gcd_eq_one hcoprime hc.symm
+  have hb := sq_of_gcd_eq_one (Nat.gcd_comm b a ▸ hcoprime) (by rw [mul_comm, hc])
+
+  obtain ⟨a0, ha0⟩ := ha
+  obtain ⟨b0, hb0⟩ := hb
+
+  constructor
+  · use a0
+    exact ha0.symm
+  · use b0
+    exact hb0.symm
 
 
 lemma ParamParity (gp : GoodParam) : Even (2 * gp.p * gp.q) := by
@@ -246,7 +290,7 @@ lemma ParamCoprime (gp : GoodParam) :
 
     have hqsmall : q ^ 2 ≤ p ^ 2 := by
       apply (Nat.pow_le_pow_iff_left (a := q) (b := p) (n := 2) (by decide)).mpr
-      exact Nat.le_of_lt gp.big
+      exact Nat.le_of_lt gp.pbig
 
     have hodd : Odd (p ^ 2 - q ^ 2) := by
       rcases hparity with ⟨hp, hq⟩ | ⟨hp, hq⟩
@@ -289,18 +333,18 @@ lemma ParamPy (gp : GoodParam) :
 
   rw [Nat.sq_sub_sq]
   apply Int.natCast_inj.mp
-  simp[Int.natCast_sub (le_of_lt gp.big)]
+  simp[Int.natCast_sub (le_of_lt gp.pbig)]
   ring
 
 
 lemma ParamNonzero (gp : GoodParam) :
-    2 * gp.p * gp.q > 0 := by
+    0 < 2 * gp.p * gp.q := by
   rw [mul_assoc]
-  have qpos : gp.q > 0 := gp.positive
-  have ppos : gp.p > 0 := by
-    have pbig: gp.p > gp.q := gp.big
+  have qpos : 0 < gp.q := gp.positive
+  have ppos : 0 < gp.p := by
+    have pbig: gp.q < gp.p := gp.pbig
     exact gt_trans pbig qpos
-  have pqpos : gp.p * gp.q > 0 := by
+  have pqpos : 0 < gp.p * gp.q := by
     exact mul_pos ppos qpos
   exact mul_pos zero_lt_two pqpos
 
@@ -315,7 +359,6 @@ def ParamToTriple (gp : GoodParam) : PyTriple :=
   py := ParamPy gp
   nonzero := ParamNonzero gp
 }
-
 
 theorem PyTripleToParam (P : PyTriple) : ∃ gp : GoodParam, P = ParamToTriple gp := by
   -- from x even, want to get x = 2*k, rewrite in terms of k
@@ -373,23 +416,72 @@ theorem PyTripleToParam (P : PyTriple) : ∃ gp : GoodParam, P = ParamToTriple g
     nth_rewrite 2 [add_comm] at gcd_dvd_sum
     rw [add_assoc, add_comm, add_assoc, add_comm, Nat.sub_add_cancel (le_of_lt (zbig P)), ← two_mul P.z] at gcd_dvd_sum
 
-    rw [ha, hb, add_comm] at gcd_dvd_diff
-    -- simp [le_of_lt (zbig P)] at gcd_dvd_diff
+    have gcd_rw : P.z + P.y - (P.z - P.y) = 2*P.y := by
+      have hcancel : P.z - (P.z - P.y) = P.y := by
+        exact Nat.sub_sub_self (le_of_lt (zbig P))
+      rw [add_comm, Nat.add_sub_assoc (Nat.sub_le P.z P.y), hcancel, two_mul]
 
-    #check Nat.sub_sub_self
-
+    rw [ha, hb, gcd_rw] at gcd_dvd_diff
     -- d ∣ 2y, d ∣ 2z
-    -- dvd_gcd: d ∣ gcd 2y 2z,
+    -- dvd_gcd: d ∣ gcd 2y 2z
+    have hdvd_gcd : d ∣ (Nat.gcd (2 * P.y) (2 * P.z)) := Nat.dvd_gcd gcd_dvd_diff gcd_dvd_sum
     -- gcd_mul_left gcd mx, my = m * gcd x, y
+    rw[Nat.gcd_mul_left] at hdvd_gcd
     -- coprime yz
+    rw [coprime_yz P] at hdvd_gcd
+    simp at hdvd_gcd
 
+    have two_div : 2 ∣ d := Nat.dvd_gcd hdiv2_sum hdiv2_diff
+    exact Nat.dvd_antisymm hdvd_gcd two_div
+
+  set u := (P.z + P.y) / 2 with hu
+  set v := (P.z - P.y) / 2 with hv
+
+  have hau : 2 * u = a := by
+    rw [hu, ← ha, mul_comm]
+    exact Nat.div_mul_cancel hdiv2_sum
+  have hbv : 2 * v = b := by
+    rw [hv, ← hb, mul_comm]
+    exact Nat.div_mul_cancel hdiv2_diff
+
+  have huv : 4 * u * v = 4 * k ^ 2 := by
+    rw [hu, hv, ←ha, ←hb, ←hab]
+    -- goal: 4 * (a/2) * (b/2) = a*b
+    calc
+      4 * (a / 2) * (b / 2)
+        = (2 * (a / 2)) * (2 * (b / 2)) := by ring
+      _ = a * (2 * (b / 2))             := by rw [Nat.mul_div_cancel' hdiv2_sum]
+      _ = a * b                         := by rw [Nat.mul_div_cancel' hdiv2_diff]
+
+  rw [mul_assoc] at huv
+  rw [Nat.mul_right_inj four_ne_zero] at huv
+
+  have gcd_uv_one : Nat.gcd u v = 1 := by
+    have hab_gcd : Nat.gcd a b = 2 := two_gcd
+    rw [← hau, ← hbv] at hab_gcd
+    rw[Nat.gcd_mul_left] at hab_gcd
+    simp at hab_gcd
+    exact hab_gcd
+
+  -- isSquare u, v
+  have uv_square : isSquare u ∧ isSquare v := by
+    exact coprime_square_product gcd_uv_one ⟨k, huv.symm⟩
+
+  -- (p'^2 = u, q'^2 = v)
+  obtain ⟨p', hp'⟩ := uv_square.1
+  obtain ⟨q', hq'⟩ := uv_square.2
+
+  -- set params and prove max(p, q) = p
+
+  have p_big_q : q' < p' := by
+    -- p'^2 = u = (P.z + P.y)/2
+    have h1 : p'^2 = (P.z + P.y)/2 := by rw [hp', hu]
+    have h2 : q'^2 = (P.z - P.y)/2 := by rw [hq', hv]
+    -- (P.z - P.y)/2 < (P.z + P.y)/2 because P.z > P.y > 0
+    have abig : b < a := by
+      rw [ha, hb]
+      sorry
     sorry
-
-  -- u = (z + y)/2
-  -- v = (z - y)/2
-  -- isSquare u, v since they will be (p^2, q^2) since u * v = k ^ 2 and gcd u v = 1
-  -- set parameters p, q where p = max(p, q)
-
   sorry
 
 theorem FermatTriangle (P : PyTriple) : ¬ isSquare (Area P) := by

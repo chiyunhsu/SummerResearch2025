@@ -813,8 +813,6 @@ lemma temp2(n:ℕ) (p1:Partition n)(parts_nonzero : ∀ x_1 ∈ p1.parts, x_1 �
   specialize parts_nonzero x2 hx2
   exact parts_nonzero
 
-
-
 lemma count_replicate_hof
     (x x₁ : ℕ) :
   List.count x
@@ -829,92 +827,35 @@ lemma count_replicate_hof
     have hne : highest_odd_factor x₁ ≠ x := h
     simp [List.count_replicate, hne]      -- the count is `0`
 
-lemma sum_pow_eq_count
-    {n x k a c : ℕ} {p1 : n.Partition}
-    (hp  : p1 ∈ distincts n)
-    (hax : highest_odd_factor a = x)
-    (hk  : x * 2 ^ k = a)
-    (hpart : x % 2 = 1)      -- `x` odd because it is a highest odd factor
-    (hB : B = p1.parts.bind (fun y ↦ ↑(List.replicate (y / highest_odd_factor y) (highest_odd_factor y))))
-    (hc : c = Multiset.count x B)
-    : ∑ y ∈ (p1.parts.filter (fun y ↦ highest_odd_factor y = x)).toFinset, 2 ^ perExp y =
-  Multiset.count x (p1.parts.bind (fun y ↦ ↑(List.replicate (y / highest_odd_factor y) (highest_odd_factor y)))) :=by
-  have : (Multiset.count x (p1.parts.bind (fun y ↦ ↑(List.replicate (y / highest_odd_factor y) (highest_odd_factor y)))))
-  = ∑ y ∈ (p1.parts.filter (fun z ↦ highest_odd_factor z = x)).toFinset, if h : highest_odd_factor y = x then y / x else 0 := by
-    simp[Multiset.count_eq_card_filter_eq]
+lemma sort_nodup_of_nodup {S : Multiset ℕ} (hS : S.Nodup) :
+    (Multiset.sort (· ≤ ·) S).Nodup := by
+  have hEq : Multiset.ofList (Multiset.sort (· ≤ ·) S) = S := by
+    simpa using
+      Multiset.sort_eq (S := S) (r := (· ≤ ·))
+  have hM : (Multiset.ofList (Multiset.sort (· ≤ ·) S)).Nodup := by
+    simpa [hEq] using hS
+  exact hM
 
+lemma list_sum_eq_multiset_sum (l : List ℕ) :
+    l.sum = (l : Multiset ℕ).sum := by
+  induction l with
+  | nil      => simp
+  | cons a t ih =>
+    simp
 
-  -- 2. compute each summand: `count x (replicateHof y …)`
-  have h₂ :
-      (fun y ↦ (replicateHof y : Multiset ℕ).count x)
-        =
-      (fun y ↦
-        if h : highest_odd_factor y = x
-        then y / x else 0) := by
-    funext y
-    by_cases h : highest_odd_factor y = x
-    · -- the replicated element *is* `x`
-      have : (replicateHof y : Multiset ℕ).count x = y / x := by
-        simp [replicateHof, h, Multiset.count_replicate, mul_comm]
-      simpa [h] using this
-    · -- the replicated element is *not* `x`
-      have : (replicateHof y : Multiset ℕ).count x = 0 := by
-        simp [replicateHof, h, Multiset.count_replicate] at *
-      simpa [h] using this
-
-  -- 3. substitute  h₂  into the sum expression obtained in step 1
-  simpa [h₂] using h₁
-    simp [Multiset.bind_eq_sum_attach]
-
-lemma testBit_sum_distinct
-    {ms : Multiset ℕ} {k : ℕ}
-    (hpow : (2 ^ k : ℕ) ∈ ms)
-    (hpair : ms.Nodup) :
-    ms.sum.testBit k = true := by
-  -- Split the sum into `2^k + rest`
-  obtain ⟨ms', rfl⟩ := (exists_cons_of_mem hpow)
-  have hdis : (¬(ms'.map (fun t : ℕ => t.testBit k)).any id) := by
-    -- Every other term is a *different* power, hence bit k is 0
-    have : ∀ t ∈ ms', t.testBit k = false := by
-      intro t ht
-      have hneq : t ≠ 2 ^ k := by
-        intro h
-        have : 2 ^ k ∈ ms'.erase (2 ^ k) := by
-          simpa [h] using ht
-        exact (hpair.subset (ms'.erase_subset _)).ne this
-      -- `testBit` for a power of two is 1 *only* on its own index
-      have : t.testBit k = (t = 2 ^ k) := by
-        rcases Nat.exists_eq_pow_of_two_le t.is_pow with ⟨j, rfl⟩
-        by_cases h' : j = k <;> simp [h', testBit_pow_self]
-      simpa [this, hneq] using this
-    -- hence the whole `any` is false
-    simp [this]
-  -- Now use `Nat.testBit_add`
-  simpa [sum_cons, testBit_pow_self, hdis]
-    using Nat.testBit_add (2^k) ms'.sum
-
-lemma sum_pow_log_comp
-    (m := (p1.parts : Multiset ℕ)) :
-    (map (fun x : ℕ => 2 ^ x) ((map (fun x => Nat.log 2 (x / highest_odd_factor x)) m).dedup)).sum
-  = (map (fun x => 2 ^ Nat.log 2 (x / highest_odd_factor x)) m).dedup.sum := by
-  -- move `map` across `dedup` using injectivity of `pow`
-  have := (map_dedup _ pow_two_injective).symm
-              (map (fun x => Nat.log 2 (x / highest_odd_factor x)) m)
-  -- `map_dedup` gave:  `map pow (map g m).dedup = (map pow (map g m)).dedup`
-  -- use `map_map` to turn RHS into one composite map
-  simpa [map_map, Function.comp] using congrArg Multiset.sum this
-
-
-
-
-lemma pow_inj: Function.Injective (fun n : ℕ => (2 : ℕ) ^ n) := by
-  intro a b hab
-  sorry
-lemma pos_filter{n:ℕ}  {p1 : n.Partition}: y ∈ Multiset.filter (fun y => highest_odd_factor y = x) p1.parts → 0 < y := by
-  intro h
-  simp[mem_iff]
-  have : highest_odd_factor y = x := by simpa using h
-  exact highest_odd_factor_pos this
+/-- 2 ▸ main goal using the bridge + the given multiset equality. -/
+lemma list_sum_eq_of_coe_eq
+    {L : List ℕ} {S : Multiset ℕ}
+    (h : (L : Multiset ℕ) = S) :
+    L.sum = S.sum := by
+  -- rewrite `L.sum` via the bridge from Step 1
+  have h₁ : L.sum = (L : Multiset ℕ).sum :=
+    list_sum_eq_multiset_sum L
+  -- rewrite `(L : Multiset).sum` to `S.sum` using `h`
+  have h₂ : (L : Multiset ℕ).sum = S.sum := by
+    simpa [h] using rfl
+  -- chain the two equalities
+  exact h₁.trans h₂
 
 lemma part_iff_bit2
     {n x k a c : ℕ} {p1 : n.Partition}
@@ -980,7 +921,7 @@ lemma part_iff_bit2
     simp[Nat.log_pow]
   simp[rw]
   set T := Multiset.filter (fun y ↦ highest_odd_factor y = x) p1.parts with hT
-  let S  : Multiset ℕ  :=  Multiset.map (fun x ↦ x / highest_odd_factor x) T
+  set S  : Multiset ℕ  :=  Multiset.map (fun x ↦ x / highest_odd_factor x) T
 
   have hS: S.Nodup := by
     let q (y : ℕ) : ℕ := y / highest_odd_factor y
@@ -1070,108 +1011,116 @@ lemma part_iff_bit2
       exact q_inj_on_T x y hx hy hxy
     simp[q] at this
     exact this
-  let L : List ℕ := S.toList
-  let Ls := L.Sorted (· ≤ ·)
-  have : Ls = True := by
-    simp [Ls]
 
-  have : List.Sorted (fun x1 x2 => x1 < x2) L := by
+  let L : List ℕ := S.sort (· ≤ ·)
+  have L_sorted_le : L.Sorted (· ≤ ·) := by
+    simpa [L] using Multiset.sorted_sort (S := S) (r := (· ≤ ·))
+  have LNodup : L.Nodup := by
+    exact sort_nodup_of_nodup hS
+  have L_sorted_lt : L.Sorted (· < ·) := by
     apply List.Sorted.lt_of_le
-    simp [L] at Ls
+    exact L_sorted_le
+    exact LNodup
+
+  let idx : List ℕ := L.map log2
+  have idx_sorted : idx.Sorted (· < ·) := by
+    have idx.Sorted :idx.Sorted (· ≤ ·) := by
+      simp [idx,log2_eq_log_two]
+      have hMono : Monotone (log 2) := Nat.log_monotone
+      simp [Monotone] at hMono
+      apply L_sorted_lt.map
+      simp [log2_eq_log_two]
+      sorry
+    have idx.Nodup : idx.Nodup := by
+      simp [idx, log2_eq_log_two]
+      apply LNodup.map_on
+      intro a ha b hb hab
+      simp [L,S,T] at ha hb
+      rcases ha with ⟨sa, hsa, rfl⟩
+      rcases hb with ⟨sb, hsb, rfl⟩
+      have sanozero: sa ≠ 0 := by
+        sorry
+      have sbnonzero : sb ≠ 0 := by
+        sorry
+      rcases hof_divid_n_2tosomepow sanozero with ⟨ka, hka⟩
+      rcases hof_divid_n_2tosomepow sbnonzero with ⟨kb, hkb⟩
+      simp [←hka,←hkb] at hab
+      simp [←hka,←hkb]
+      exact hab
+    apply List.Sorted.lt_of_le
+    exact idx.Sorted
+    exact idx.Nodup
+
+  have map_pow_idx_eq_L : List.map (fun i : ℕ => 2 ^ i) idx = L := by
+    simp [idx, List.map_map, log2_eq_log_two, Function.comp_def]
+
+    have h_pow2_S : ∀ s : ℕ, s ∈ S → ∃ k : ℕ, s = 2 ^ k := by
+      intro s hsS
+      have: s ∈ Multiset.map (fun y : ℕ =>
+              2 ^ Nat.log2 (y / highest_odd_factor y)) T := by
+        simp [S] at hsS
+        rcases hsS with ⟨a, ⟨ha,ha1⟩⟩
+        simp
+        use a
+        constructor
+        exact ha
+        let temp:= (a / highest_odd_factor a)
+        simp [T] at ha
+        have : a ≠ 0 := by
+          exact Nat.ne_of_gt (p1.parts_pos ha.1)
+        rcases hof_divid_n_2tosomepow (n:=a) (hn_nonzero:=this) with ⟨k, hk⟩
+        simp [←hk]
+        simp [←ha1]
+        exact hk
+      simp at this
+      rcases this with ⟨k, hk⟩
+      use k
+
+    have h_pow2_L : ∀ b : ℕ, b ∈ L → ∃ k : ℕ, b = 2 ^ k := by
+      sorry
+    sorry
+  have S_sum_bitIndices :
+    S.sum.bitIndices = idx := by
+    have hSum :
+        (List.map (fun i : ℕ => 2 ^ i) idx).sum = S.sum := by
+      have : (List.map (fun i : ℕ => 2 ^ i) idx).sum = L.sum := by
+        simpa [map_pow_idx_eq_L] using rfl
+      have hLS : L.sum = S.sum := by
+        have : (Multiset.ofList L) = S := by
+          simpa [L] using
+            Multiset.sort_eq (S := S) (r := (· ≤ ·))
+        exact list_sum_eq_of_coe_eq this
+      simpa [hLS] using this
+
+    have hBit :=
+      Nat.bitIndices_twoPowsum (L := idx) (idx_sorted)
+    simpa [hSum] using hBit
+  simp [S_sum_bitIndices]
+  simp [idx, L , S, T]
+  use a
+  constructor
+  constructor
+  exact hamem
+  exact hax
+  have hx_pos : 0 < x := by sorry
+  have hquot : a / x = 2 ^ k := by
+    have : a = (2 ^ k) * x := by
+      simp [Nat.mul_comm (n:=x)] at hk
+      exact hk.symm
+    have := Nat.div_eq_of_eq_mul_left hx_pos this
+    simpa [hax] using this
+  simp [←hax] at hquot
+  simp [hquot]
 
 
-  let L : List ℕ :=
-  (S.toList).mergeSort (· < ·)
-  have sorted_le : List.Sorted (· ≤ ·) L := by
-    simpa [L] using List.sorted_mergeSort (· ≤ ·) S.toList
-
-
-
-  set lexp := (Multiset.filter (fun y => highest_odd_factor y = x) p1.parts).toList
-  set l1 := List.map (fun y : ℕ => 2 ^ perExp y) lexp
-  have : m1.sum = l1.sum := by
-    simp [m1, l1,mexp,lexp]
-    set S := Multiset.filter (fun y : ℕ => highest_odd_factor y = x) p1.parts
-    set f := (fun y : ℕ => 2 ^ perExp y)
-    calc
-      (Multiset.map f S).sum
-          = ((Multiset.map f S).toList).sum      := by
-            simpa using (Multiset.sum_toList (Multiset.map f S))
-      _   = (List.map f S.toList).sum            := by
-            apply congrArg
 
 
 
 
 
-
-  set l1 := m1.toList
-  have hsum : m1.sum = l1.sum := by
-    simpa [l1] using m1.sum_toList
-  simp[hsum]
-
-
-
-
-
-
-
-  -- proving k is distinct is the same as 2^k is distinct
-  simp[Nat.bitIndices_twoPowsum]
-
-
-  --perExp = log2 (y / hof y) = (k in the 2^k = y / hof y)
-  have: ∑ i ∈ (Multiset.map (fun x_1 => perExp x_1) p1.parts).toFinset, 2 ^ i = c := by
-    simp[hc]
-    simp[hB]
-    simp[perExp]
-    simp[Finset.sum]
-
-    have  : (Multiset.map (fun x : ℕ => 2 ^ x) ((Multiset.map (fun x => Nat.log 2 (x / highest_odd_factor x)) p1.parts)).dedup).sum
-          =  ((Multiset.map (fun x => (2 ^ (Nat.log 2 (x / highest_odd_factor x)))) p1.parts).dedup.sum) := by
-      have h1:  (map (fun k => (2 : ℕ) ^ k)
-            ((map (fun x => Nat.log 2 (x / highest_odd_factor x)) p1.parts).dedup))
-          =
-        (map (fun k => (2 : ℕ) ^ k)
-            (map (fun x => Nat.log 2 (x / highest_odd_factor x)) p1.parts)).dedup := by
-        -- apply Multiset.dedup_map_of_injective
-        set ms:= (Multiset.map (fun x => log 2 (x / highest_odd_factor x)) p1.parts) with hms
-        simpa using (Multiset.dedup_map_of_injective pow_inj ms).symm
-      have h2:
-        map (fun k => (2 : ℕ) ^ k)
-            (map (fun x => Nat.log 2 (x / highest_odd_factor x)) p1.parts)
-          =
-        map (fun x => (2 : ℕ) ^ Nat.log 2 (x / highest_odd_factor x)) p1.parts := by
-        simpa [Multiset.map_map, Function.comp] using rfl
-      simp[h1,h2]
-    simp[this]
-    have:  (Multiset.map (fun x => 2 ^ log 2 (x / highest_odd_factor x)) p1.parts).dedup.sum
-      = (Multiset.map (fun x => (x / highest_odd_factor x)) p1.parts).dedup.sum := by
-      have hmap : map (fun x : ℕ =>
-                2 ^ Nat.log 2 (x / highest_odd_factor x)) p1.parts = map (fun x : ℕ => x / highest_odd_factor x) p1.parts := by
-        refine map_congr rfl ?_
-        intro y hy
-        have hypos : 0 < y := p1.parts_pos hy
-        have h_nozero: y≠ 0:= by
-          intro h
-          exact hypos.ne' h
-        rcases hof_divid_n_2tosomepow (n:=y) h_nozero with ⟨k,hk⟩
-        simp[←hk]
-        simp[Nat.log_pow]
-      simp[hmap]
-    simp[this]
-    let g(y : ℕ)(x:ℕ):= if highest_odd_factor y = x then y / x else 0
-
-
-
---Multiset.count_eq_card_filter_eq
---above is an important theorem
-
-  simp[Finset.twoPowSum_toFinset_bitIndices]
   sorry
   sorry
 
-  sorry
 
 lemma map_binary_eq_filter2 (p1 : Partition n) (hp: p1 ∈ distincts n) {x : ℕ}(B : Multiset ℕ) (hB:B = p1.parts.bind fun y ↦ List.replicate (y / highest_odd_factor y) (highest_odd_factor y))  (hx : x ∈ B.toFinset) :
   Multiset.map (fun y : ℕ => y * x) (binary (Multiset.count x B)) = Multiset.filter (fun y : ℕ => highest_odd_factor y = x) p1.parts := by

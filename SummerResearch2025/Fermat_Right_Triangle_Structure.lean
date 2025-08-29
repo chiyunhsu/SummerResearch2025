@@ -121,7 +121,6 @@ lemma zbig (P : PyTriple) : P.y < P.z := by
   exact hle'
   exact hne
 
-
 lemma ypos (P : PyTriple) : 0 < P.y := by
   by_contra h
   push_neg at h
@@ -146,6 +145,23 @@ lemma zpos (P : PyTriple) : 0 < P.z := by
   · exact hpos
   · exfalso
     norm_num at hzero
+
+
+lemma yz_2big (P : PyTriple) : 2 ≤ P.z - P.y := by
+  have hy_lt_z := zbig P
+  have hpos : 0 < P.z - P.y := Nat.sub_pos_of_lt hy_lt_z
+  have hyodd := yodd P
+  have hzodd := zodd P
+  have heven : Even (P.z - P.y) := Nat.Odd.sub_odd hzodd hyodd
+  obtain ⟨k, hk⟩ := heven
+  rw [hk] at hpos ⊢  -- rewrite P.z - P.y = 2 * k
+  cases k with
+  | zero => simp at hpos -- contradiction, since 0 < 0
+  | succ k' =>
+    have h : 2 ≤ (k' + 1) * 2 := Nat.le_mul_of_pos_left 2 (Nat.succ_pos k')
+    rw [mul_comm, two_mul] at h
+    exact h
+
 
 lemma odd_coprime_two {a : ℕ} (h : Odd a) : Nat.gcd a 2 = 1 := by
   let g : ℕ := Int.gcd a 2
@@ -235,8 +251,7 @@ lemma coprime_diff_sum (gp : GoodParam) : Nat.gcd (gp.p - gp.q) (gp.p + gp.q) = 
   let p := gp.p
   let q := gp.q
 
-  have hpbig : q ≤ p := by
-    exact Nat.le_of_lt gp.pbig
+  have hpbig : q ≤ p := Nat.le_of_lt gp.pbig
 
   rw [← Nat.gcd_add_self_right (p - q) (p + q), add_comm, tsub_add_eq_add_tsub hpbig, ← add_assoc p p q, add_tsub_cancel_right, ← two_mul]
   have h_parity : Odd (p - q) := opp_parity_odd_diff gp
@@ -473,15 +488,106 @@ theorem PyTripleToParam (P : PyTriple) : ∃ gp : GoodParam, P = ParamToTriple g
 
   -- set params and prove max(p, q) = p
 
-  have p_big_q : q' < p' := by
+  have pq_big : q' < p' := by
     -- p'^2 = u = (P.z + P.y)/2
+    -- q'^2 = v = (P.z - P.y)/2
     have h1 : p'^2 = (P.z + P.y)/2 := by rw [hp', hu]
     have h2 : q'^2 = (P.z - P.y)/2 := by rw [hq', hv]
-    -- (P.z - P.y)/2 < (P.z + P.y)/2 because P.z > P.y > 0
+
     have abig : b < a := by
       rw [ha, hb]
-      sorry
-    sorry
+      have partial_diff : P.z - P.y < P.z := by
+        exact Nat.sub_lt (zpos P) (ypos P)
+      have add_sum_eq : P.z + P.y - P.y = P.z := by
+        simp
+      have partial_sum : P.z < P.z + P.y := by
+        nth_rewrite 1 [← add_sum_eq]
+        have sum_pos : 0 < P.z + P.y := by
+          rw [Nat.add_pos_iff_pos_or_pos]
+          left
+          exact zpos P
+        exact Nat.sub_lt (sum_pos) (ypos P)
+      exact lt_trans partial_diff partial_sum
+
+    rw [← ha] at h1
+    rw [← hb] at h2
+    have sq_ineq : q' ^ 2 < p' ^ 2 := by
+      rw [h1, h2]
+      apply (Nat.div_lt_div_right two_ne_zero hdiv2_diff hdiv2_sum).mpr
+      exact abig
+    apply (Nat.pow_lt_pow_iff_left two_ne_zero).mp
+    exact sq_ineq
+
+  have pq_coprime : Nat.gcd p' q' = 1 := by
+    rw [← Int.gcd_natCast_natCast, Int.isCoprime_iff_gcd_eq_one.symm, Nat.isCoprime_iff_coprime]
+    have p2q2_coprime : (p' ^ 2).Coprime (q' ^ 2) := by
+      rw [hp', hq']
+      exact gcd_uv_one
+    rw [← Nat.coprime_pow_left_iff zero_lt_two, ← Nat.coprime_pow_right_iff zero_lt_two]
+    exact p2q2_coprime
+
+  have pq_parity : (Even p' ∧ Odd q') ∨ (Odd p' ∧ Even q') := by
+    -- case 1: rule out both even
+    by_cases hp : Even p'
+    · by_cases hq : Even q'
+      · -- both even ⇒ gcd(p',q') ≥ 2, contradiction
+        have : 2 ∣ Nat.gcd p' q' := Nat.dvd_gcd (Even.two_dvd hp) (Even.two_dvd hq)
+        rw [pq_coprime] at this
+        contradiction
+      · -- p' even, q' odd
+        rw [Nat.not_even_iff_odd] at hq
+        exact Or.inl ⟨hp, hq⟩
+    · -- p' odd
+      by_cases hq : Even q'
+      · -- p' odd, q' even
+        rw [Nat.not_even_iff_odd] at hp
+        exact Or.inr ⟨hp, hq⟩
+      · -- both odd ⇒ contradiction because z odd
+        have hu' : p' ^ 2 = u := hp'
+        have hv' : q' ^ 2 = v := hq'
+        rw [Nat.not_even_iff_odd] at hp
+        rw [Nat.not_even_iff_odd] at hq
+        have hup : Odd u := by rw [← hu']; exact odd_square hp
+        have hvp : Odd v := by rw [← hv']; exact odd_square hq
+        have uv_even : Even (u + v) := Odd.add_odd hup hvp
+        -- but u+v = z
+        have uv_sum : u + v = P.z := by
+          rw [hu, hv]
+          rw [← Nat.add_div_of_dvd_left]
+          nth_rewrite 2 [add_comm]
+          rw [add_assoc, add_comm, add_assoc, add_comm, Nat.sub_add_cancel (le_of_lt (zbig P)), ← two_mul P.z]
+          simp
+          exact hdiv2_diff
+        have z_even : Even P.z := by
+          rw [← uv_sum]
+          exact uv_even
+        have z_odd : Odd P.z := zodd P
+        rw [← Nat.not_even_iff_odd] at z_odd
+        contradiction
+
+  have pq_positive : 0 < q' := by
+    have hv' : q'^2 = v := hq'
+    have v_pos : 0 < v := by
+      rw [hv]
+      exact Nat.div_pos (yz_2big P) zero_lt_two
+    rw [← hv'] at v_pos
+    rw [Nat.pow_pos_iff] at v_pos
+    cases v_pos with
+    | inl hv => exact hv
+    | inr hv =>
+      have : 2 ≠ 0 := two_ne_zero
+      contradiction
+
+  let gp : GoodParam :=
+  { p := p'
+  , q := q'
+  , pbig := pq_big
+  , coprime := pq_coprime
+  , parity := pq_parity
+  , positive := pq_positive }
+
+  refine ⟨gp, ?_⟩
+
   sorry
 
 theorem FermatTriangle (P : PyTriple) : ¬ isSquare (Area P) := by

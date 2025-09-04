@@ -655,6 +655,101 @@ theorem PyTripleToParam (P : PyTriple) : ∃ gp : GoodParam, P = ParamToTriple g
   exact gp_y
   exact gp_z
 
+
 theorem FermatTriangle (P : PyTriple) : ¬ isSquare (Area P) := by
   rintro ⟨k, hk⟩
+  rcases PyTripleToParam P with ⟨gp, hgp⟩
+
+  have h_area : Area P = gp.p * gp.q * (gp.p^2 - gp.q^2) := by
+    rw [hgp, Area, ParamToTriple]
+    simp
+    rw [mul_assoc 2, mul_comm 2, mul_assoc (gp.p * gp.q), mul_comm, mul_assoc 2, mul_comm]
+    simp
+    rw [mul_comm]
+
+  rw [Nat.sq_sub_sq, ← mul_assoc, ← hk] at h_area
+
+  have sq_area : isSquare (gp.p * gp.q * (gp.p + gp.q) * (gp.p - gp.q)) := by
+    use k
+
+  have factors_sqs (hsq : isSquare (gp.p * gp.q * (gp.p + gp.q) * (gp.p - gp.q))) :
+      isSquare gp.p ∧ isSquare gp.q ∧ isSquare (gp.p + gp.q) ∧ isSquare (gp.p - gp.q) := by
+    let rest1 := gp.p * gp.q * (gp.p + gp.q)
+
+    have hcoprime1 : Nat.gcd (gp.p - gp.q) rest1 = 1 := by
+      apply coprime_mul
+      · apply coprime_mul
+        · -- gcd(p - q, p)
+          rw [Nat.gcd_comm]
+          apply coprime_p_diff
+        · -- gcd(p - q, q)
+          rw [Nat.gcd_comm]
+          apply coprime_q_diff
+      · -- gcd(p - q, p + q)
+        apply coprime_diff_sum
+
+    have htotal_square : isSquare ((gp.p - gp.q) * rest1) := by
+      rw [mul_comm]
+      exact hsq
+
+    have ⟨hsq_diff, hsq_rest1⟩ := coprime_square_product hcoprime1 htotal_square
+
+    let rest2 := gp.p * gp.q
+
+    have hcoprime2 : Nat.gcd (gp.p + gp.q) rest2 = 1 := by
+      apply coprime_mul
+      rw [Nat.gcd_comm]
+      apply coprime_p_sum
+      rw [Nat.gcd_comm]
+      apply coprime_q_sum
+
+    have htotal_square1 : isSquare ((gp.p + gp.q) * rest2) := by
+      rw [mul_comm]
+      exact hsq_rest1
+
+    have ⟨hsq_sum, hsq_rest2⟩ := coprime_square_product hcoprime2 htotal_square1
+
+    have hpq_square : isSquare (gp.p * gp.q) := by
+      exact hsq_rest2
+
+    have ⟨hsq_p, hsq_q⟩ := coprime_square_product gp.coprime hpq_square
+
+    exact ⟨hsq_p, hsq_q, hsq_sum, hsq_diff⟩
+
+  rcases factors_sqs sq_area with ⟨_, _, ⟨r, hr⟩, ⟨s, hs⟩⟩
+
+  have odd_r2 : Odd (r^2) := by
+    rw [hr]
+    exact opp_parity_odd_sum gp
+
+  have odd_s2 : Odd (s^2) := by
+    rw [hs]
+    exact opp_parity_odd_diff gp
+
+  have odd_r : Odd r := by
+    by_contra hr_even
+    -- Then r = 2 * m for some m
+    rw [Nat.not_odd_iff_even] at hr_even
+    have hr2_even : Even (r^2) := even_square hr_even
+    have hr2_odd := odd_r2
+    rw [← Nat.not_even_iff_odd] at odd_r2
+    contradiction
+
+  have odd_s : Odd s := by
+    by_contra hs_even
+    -- Then s = 2 * m for some m
+    rw [Nat.not_odd_iff_even] at hs_even
+    have hs2_even : Even (s^2) := even_square hs_even
+    have hs2_odd := odd_s2
+    rw [← Nat.not_even_iff_odd] at odd_s2
+    contradiction
+
+  have even_rs_sum : Even (r + s) := Odd.add_odd odd_r odd_s
+  have even_rs_diff : Even (r - s) := Nat.Odd.sub_odd odd_r odd_s
+
+  -- one of r+s or r-s is divisible by 4
+  -- u = (r+s)/2, v = (r-s)/2, one of which is even
+  -- u^2 + v^2 = (r+s)^2/4 + (r-s)^2/4 = (2r^2 + 2s^2)/4 = (r^2 + s^2)/2 = p^2
+  -- Area : uv/2 = (r+s)/2 * (r-s)/2 * 1/2 = (r^2 - s^2)/8 = ((p+q) - (p-q))/8 = 2q/8 = q/4
+
   sorry

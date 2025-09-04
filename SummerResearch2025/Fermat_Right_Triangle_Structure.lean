@@ -16,7 +16,7 @@ structure GoodParam where
   positive : 0 < q
 
 -- x, y, z, parity, coprime, py
-structure PyTriple where
+@[ext] structure PyTriple where
   x : ℕ
   y : ℕ
   z : ℕ
@@ -575,10 +575,9 @@ theorem PyTripleToParam (P : PyTriple) : ∃ gp : GoodParam, P = ParamToTriple g
     cases v_pos with
     | inl hv => exact hv
     | inr hv =>
-      have : 2 ≠ 0 := two_ne_zero
       contradiction
 
-  let gp : GoodParam :=
+  let gp' : GoodParam :=
   { p := p'
   , q := q'
   , pbig := pq_big
@@ -586,9 +585,75 @@ theorem PyTripleToParam (P : PyTriple) : ∃ gp : GoodParam, P = ParamToTriple g
   , parity := pq_parity
   , positive := pq_positive }
 
-  refine ⟨gp, ?_⟩
+  refine ⟨gp', ?_⟩
 
-  sorry
+  have gp_x : P.x = 2 * gp'.p * gp'.q := by
+    rw [← sq_eq_sq₀, Nat.mul_pow, Nat.mul_pow, hp', hq']
+    rw [mul_assoc, huv, ← Nat.mul_pow, sq_eq_sq₀, hk]
+
+    exact Nat.zero_le P.x
+
+    rw [← hk]
+    exact Nat.zero_le P.x
+
+    exact Nat.zero_le P.x
+
+    have p_pos : 0 < gp'.p := by
+      exact lt_trans pq_positive pq_big
+
+    have ge_two : 2 ≤ 2 * gp'.p * gp'.q := by
+
+      have ge_two_1 : 2 ≤ 2 * gp'.p := by
+        exact Nat.le_mul_of_pos_right 2 p_pos
+
+      have ge_two_2 : 2 * gp'.p ≤ 2 * gp'.p * gp'.q := by
+        exact Nat.le_mul_of_pos_right (2 * gp'.p) pq_positive
+
+      exact le_trans ge_two_1 ge_two_2
+
+    exact le_trans zero_le_two ge_two
+
+  have gp_y : P.y = gp'.p ^ 2 - gp'.q ^ 2 := by
+    rw [hp', hq', hu, hv, ← ha, ← hb]
+    have htwice : P.y = (a - b)/2 := by
+      rw [ha, hb]
+
+      have gcd_rw : P.z + P.y - (P.z - P.y) = 2*P.y := by
+        have hcancel : P.z - (P.z - P.y) = P.y := by
+          exact Nat.sub_sub_self (le_of_lt (zbig P))
+        rw [add_comm, Nat.add_sub_assoc (Nat.sub_le P.z P.y), hcancel, two_mul]
+
+      rw [gcd_rw]
+      norm_num
+    rw [htwice]
+
+    obtain ⟨a', ha'⟩ := hdiv2_sum
+    obtain ⟨b', hb'⟩ := hdiv2_diff
+
+    rw [ha', hb']
+    rw [← Nat.mul_sub_left_distrib 2]
+    norm_num
+
+  have gp_z : P.z = gp'.p ^ 2 + gp'.q ^ 2 := by
+    rw [hp', hq', hu, hv, ← ha, ← hb]
+    have htwice : P.z = (a + b)/2 := by
+      rw [ha, hb]
+      nth_rewrite 2 [add_comm]
+      rw [add_assoc, add_comm, add_assoc, add_comm, Nat.sub_add_cancel (le_of_lt (zbig P)), ← two_mul P.z]
+      norm_num
+    rw [htwice]
+
+    obtain ⟨a', ha'⟩ := hdiv2_sum
+    obtain ⟨b', hb'⟩ := hdiv2_diff
+
+    rw [ha', hb']
+    rw [← Nat.mul_add 2]
+    norm_num
+
+  apply PyTriple.ext
+  exact gp_x
+  exact gp_y
+  exact gp_z
 
 theorem FermatTriangle (P : PyTriple) : ¬ isSquare (Area P) := by
   rintro ⟨k, hk⟩

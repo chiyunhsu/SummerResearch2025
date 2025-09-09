@@ -260,11 +260,13 @@ lemma InDist {n : ℕ} (P : n.Partition) (P_odd : P ∈ (odds n)) : FromOdd P P_
 def FromDistPart (b : ℕ) : Multiset ℕ :=
   Multiset.replicate (2 ^ (Nat.factorization b 2)) (hof b)
 
-def Same_hof {n : ℕ} (P : n.Partition) (a : ℕ) : Multiset ℕ := (Multiset.filter (fun b ↦ (hof b = a)) P.parts)
+def Same_hof {n : ℕ} (Q : n.Partition) (a : ℕ) : Multiset ℕ := (Multiset.filter (fun b ↦ (hof b = a)) Q.parts)
 
-def FromDistPart' {n : ℕ} (P : n.Partition) (a : ℕ) : Multiset ℕ :=
+def Qb {n : ℕ} (Q : n.Partition) (b : ℕ) : Multiset ℕ := (Multiset.filter (fun b' ↦ (hof b' = hof b)) Q.parts)
+
+def FromDistPart' {n : ℕ} (Q : n.Partition) (a : ℕ) : Multiset ℕ :=
 --Multiset.bind (Multiset.filter (fun b ↦ (hof b = a)) P.parts) (FromDistPart)
-Multiset.replicate (Multiset.map (fun b ↦ ordProj[2] b) (Same_hof P a)).sum a
+Multiset.replicate (Multiset.map (fun b ↦ ordProj[2] b) (Same_hof Q a)).sum a
 
 -- Each part in the multiset `FromDistPart` is positive
 lemma FromDistPart_pos {n : ℕ} (Q : n.Partition) (b : ℕ) (hb : b ∈ Q.parts) {a : ℕ} :
@@ -279,6 +281,16 @@ lemma FromDistPart_pos {n : ℕ} (Q : n.Partition) (b : ℕ) (hb : b ∈ Q.parts
   · have b_pos : b > 0 := Q.parts_pos hb
     apply le_of_dvd b_pos (two_pow_dvd b)
 
+lemma FromDistPart'_pos {n : ℕ} (Q : n.Partition) (a : ℕ) (ha : Odd a) {a' : ℕ} :
+    a' ∈ (FromDistPart' Q a) → a' > 0 := by
+  rintro ha'
+  apply Multiset.mem_replicate.mp at ha'
+  rw [ha'.2]
+  apply Nat.pos_iff_ne_zero.mpr
+  intro a_eq_zero
+  rw [a_eq_zero] at ha
+  contradiction
+
 lemma FromDistPart_sum (b : ℕ) : (FromDistPart b).sum = b := by
   unfold FromDistPart
   simp only [Multiset.sum_replicate, smul_eq_mul]
@@ -286,12 +298,16 @@ lemma FromDistPart_sum (b : ℕ) : (FromDistPart b).sum = b := by
   · simp [hof, b_zero]
   · rw [two_pow_mul_hof_eq_self b]
 
-lemma FromDistPart'_sum {n : ℕ} (P : n.Partition) (a : ℕ) : (FromDistPart' P a).sum = (Same_hof P a).sum := by
+lemma FromDistPart'_sum {n : ℕ} (Q : n.Partition) (a : ℕ) : (FromDistPart' Q a).sum = (Same_hof Q a).sum := by
   unfold FromDistPart'
   simp only [Multiset.sum_replicate, smul_eq_mul]
   rw [← Multiset.sum_map_mul_right]
-
-
+  congr
+  nth_rw 2 [← Multiset.map_id (Same_hof Q a)]
+  apply Multiset.map_congr rfl
+  intro x hx
+  simp [Same_hof] at hx
+  simp [← hx.2, two_pow_mul_hof_eq_self]
 
 -- Map from (distinct) partitions to (odd) partitions, only as a multiset : the union of `FromDistPart` of a part `a`
 def FromDist_parts {n : ℕ} (Q : n.Partition) : Multiset ℕ :=
@@ -301,8 +317,8 @@ def FromDist_parts {n : ℕ} (Q : n.Partition) : Multiset ℕ :=
 lemma Finsetsum_eq_Bind' {n : ℕ} (Q : n.Partition) :
   ∑ b ∈ Q.parts.toFinset, (Multiset.count b Q.parts) • (FromDistPart b)
   = Multiset.bind (Q.parts) (FromDistPart) := by
-  #check Multiset.count_sum
-  #check Multiset.count_sum'
+--  #check Multiset.count_sum
+--  #check Multiset.count_sum'
   sorry
 
 lemma FromDist_parts_pos {n : ℕ} (Q : n.Partition) {a : ℕ} : a ∈ (FromDist_parts Q) → a > 0 := by
@@ -419,7 +435,7 @@ lemma RightInvPart_self {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n)
   Multiset.count b (FromOddPart (FromDist Q Q_dist) (hof b)) = 1 := by sorry
 
 lemma RightInvPart_others {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
-  ∀ a ∈ (FromDist Q Q_dist).parts.toFinset, a ≠ hof b → Multiset.count b (FromOddPart (FromDist Q Q_dist) a) = 0 := by sorry
+  ∀ a ∈ (FromDist Q Q_dist).parts.toFinset, a ∉ ({hof b} : Finset ℕ) → Multiset.count b (FromOddPart (FromDist Q Q_dist) a) = 0 := by sorry
 
 lemma RightInv {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) :
   FromOdd (FromDist Q Q_dist) (InOdd Q Q_dist) = Q := by
@@ -434,23 +450,41 @@ lemma RightInv {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) :
 
   by_cases hb : b ∈ Q.parts
   · rw [Multiset.count_eq_one_of_mem Q_Nodup hb]
-    let Qb := Multiset.filter (fun (b': ℕ) ↦ (hof b' = hof b)) Q.parts
     have hsubset0 : (FromDistPart b) ⊆ (FromDist Q Q_dist).parts := by
       simp [FromDist]
       apply Multiset.subset_of_le
       exact Multiset.le_bind Q.parts hb
-    have hsubset : (∑ b' ∈ Qb.toFinset, (FromDistPart b')).toFinset ⊆ (FromDist Q Q_dist).parts.toFinset := by
+
+    #check Same_hof
+    have hsubset' : {hof b} ⊆ (FromDist Q Q_dist).parts.toFinset := by
+      sorry
+
+    have hsubset : (∑ b' ∈ (Qb Q b).toFinset, (FromDistPart b')).toFinset ⊆ (FromDist Q Q_dist).parts.toFinset := by
       apply Multiset.toFinset_subset.mpr
       apply Multiset.subset_of_le
       unfold Finset.sum
       #check Multiset.le_sum_of_subadditive
+      sorry
 
-
-    rw [← Finset.sum_subset hsubset (RightInvPart_others Q Q_dist b)]
-    exact LeftInvPart_self P P_odd a
+    rw [← Finset.sum_subset hsubset' (RightInvPart_others Q Q_dist b)]
+    simp
+    exact RightInvPart_self Q Q_dist b
 
 
   · rw [Multiset.count_eq_zero_of_notMem hb]
+    have hsubset' : {hof b} ⊆ (FromDist Q Q_dist).parts.toFinset := by
+      sorry
+    rw [← Finset.sum_subset hsubset' (RightInvPart_others Q Q_dist b)]
+    simp only [Finset.sum_singleton, Multiset.count_eq_zero]
+    intro b_mem
+    unfold FromOddPart at b_mem
+    simp at b_mem
+    rcases b_mem with ⟨x, hx, b_eq⟩
+    unfold hof at b_eq
+    have x_eq : x = ordProj[2] b := by sorry
+
+
+
     have lem {a : ℕ} (ha : a ∈ (FromDist Q Q_dist).parts.toFinset) : Multiset.count b (FromOddPart (FromDist Q Q_dist) a) = 0 := by
       rw [Multiset.count_eq_zero_of_notMem]
       rw [Multiset.mem_toFinset] at ha
@@ -483,7 +517,19 @@ lemma RightInv {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) :
           intro b' hb'
 
 #check bitIndices_twoPowsum
+#check Multiset.sort
+lemma binary_reverse (I : Finset ℕ) : (Multiset.map (fun i ↦ 2 ^ i) I.val).sum.bitIndices = I.val := by
+  let I_sort := Finset.sort (· ≤ ·) I
+  have h : (List.map (fun i => 2 ^ i) I_sort).sum.bitIndices = I_sort := bitIndices_twoPowsum (Finset.sort_sorted_lt I)
+
+  #check List.toFinset
+  have h' : ((List.map (fun i => 2 ^ i) I_sort).sum.bitIndices).toFinset = I := by
+    rw [h]
+    exact Finset.sort_toFinset (· ≤ ·) I
+  rw [← Finset.sort_toFinset (· ≤ ·) I]
+
 #check twoPowSum_bitIndices
+#check List.map_id''
 
 
 -- Euler's identity states that the number of odd partitions of `n` is equal to the number of distinct partitions of `n`.

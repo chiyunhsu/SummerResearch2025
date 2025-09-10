@@ -114,91 +114,69 @@ def FromOdd {n : ℕ} (P : n.Partition) (_ : P ∈ odds n) : n.Partition :=
     parts_sum := FromOdd_parts_sum P }
 
 -- Highest odd factor of a natural number
-def hof (b : ℕ) : ℕ := b / (ordProj[2] b)
+def hof (b : ℕ) : ℕ := ordCompl[2] b
 
-lemma prime_factorization_self {p : ℕ} (hp : Nat.Prime p) : p.factorization p = 1 := by
-  have : (p ^ 1).factorization = Finsupp.single p 1 := Prime.factorization_pow (k := 1) hp
-  simp at this
-  rw [this]
-  simp
+/-Suggest to add-/
+lemma ordCompl_PrimePow_eq_one {p k : ℕ} (hp : Nat.Prime p) : ordCompl[p] (p ^ k) = 1 := by
+  have pow_ne_zero : p ^ k ≠ 0 := pow_ne_zero k (Nat.Prime.ne_zero hp)
+  apply Nat.eq_of_factorization_eq
+  · exact pos_iff_ne_zero.mp (ordCompl_pos p pow_ne_zero)
+  · exact one_ne_zero
+  · simp [Nat.factorization_ordCompl, Nat.Prime.factorization_pow hp, Nat.factorization_one]
 
-lemma prime_factorization_diff {p n : ℕ} (hp : Nat.Prime p) (h : p ≠ n): p.factorization n = 0 := by
-  have : (p ^ 1).factorization = Finsupp.single p 1 := Prime.factorization_pow (k := 1) hp
-  simp at this
-  rw [this]
-  exact Finsupp.single_eq_of_ne h
+lemma ordCompl_mul_PrimePow_eq_self (n k : ℕ) {p : ℕ} (hp : Nat.Prime p) : ordCompl[p] (p ^ k * n) = ordCompl[p] n := by
+  rw [ordCompl_mul, ordCompl_PrimePow_eq_one hp, one_mul]
 
-lemma two_pow_dvd (b : ℕ) : (ordProj[2] b) ∣ b := ordProj_dvd b 2
-
-lemma two_pow_mul_hof_eq_self (b : ℕ) : (ordProj[2] b) * hof b = b := Nat.mul_div_cancel_left' (two_pow_dvd b)
-
-lemma hof_two_pow_mul (x i : ℕ) : hof (2 ^ i * x) = hof (x) := by
-  unfold hof
-  by_cases xzero : x = 0
-  · simp [xzero]
-  · have two_pow_x_ne_zero : 2 ^ i * x ≠ 0 := by
-      apply Nat.mul_ne_zero
-      exact pow_ne_zero i two_ne_zero
-      exact xzero
-    simp [xzero, two_pow_x_ne_zero]
-    simp [prime_factorization_self prime_two]
-    calc
-    (2 ^ i * x) / 2 ^ (i + x.factorization 2) = (2 ^ i * x) / (2 ^ i * 2 ^ (x.factorization 2)) := by rw [Nat.pow_add]
-    _ = (2 ^ i  / 2 ^ i) * (x / (2 ^ (x.factorization 2))) := Nat.mul_div_mul_comm (dvd_refl _) (two_pow_dvd x)
-    _ = x / (2 ^ (x.factorization 2)) := by simp
-
-lemma hof_eq_iff_odd_or_zero (a : ℕ)  : hof a = a ↔ (Odd a ∨ a = 0) := by
-  unfold hof
+lemma not_dvd_of_ordComp_eq_self (n : ℕ) {p : ℕ} (hp : Nat.Prime p) : ordCompl[p] n = n ↔ n = 0 ∨ ¬p ∣ n := by
   constructor
   · intro h
-    rw [Nat.div_eq_iff_eq_mul_right (Nat.pos_iff_ne_zero.mpr (pow_ne_zero _ two_ne_zero)) (two_pow_dvd a)] at h
-    by_cases a_zero : a = 0
-    · right; exact a_zero
-    · left;
-      simp [a_zero] at h
-      rw [← Nat.not_even_iff_odd]
-      rw [not_iff_not.mpr even_iff_two_dvd]
-      rw [factorization_eq_zero_iff] at h
-      rcases h with (h1 | (h2 | h3))
-      · contradiction
-      · exact h2
-      · contradiction
-  · rintro (a_odd | a_zero)
-    · have : a.factorization 2 = 0 := by
-        apply Nat.factorization_eq_zero_of_not_dvd
-        exact Odd.not_two_dvd_nat a_odd
+    by_cases n_zero : n = 0
+    · simp [n_zero]
+    · right
+      rw [← h]
+      exact not_dvd_ordCompl hp n_zero
+  · rintro (n_eq_zero | not_dvd)
+    · simp [n_eq_zero]
+    · have : n.factorization p = 0 := Nat.factorization_eq_zero_of_not_dvd not_dvd
       rw [this]
       simp
-    · simp [a_zero]
+/- -/
 
-lemma hof_eq_of_odd (a : ℕ) (a_odd : Odd a) : hof a = a := by
-  have : a.factorization 2 = 0 := Nat.factorization_eq_zero_of_not_dvd (Odd.not_two_dvd_nat a_odd)
-  simp [hof, this]
+lemma hof_eq_iff_odd_or_zero (a : ℕ) : hof a = a ↔ (a = 0 ∨ Odd a) := by
+  rw [← not_even_iff_odd, even_iff_two_dvd]
+  exact not_dvd_of_ordComp_eq_self a prime_two
 
-lemma hof_odd (x : ℕ) (x_ne_zero : x ≠ 0) : Odd (hof x) := by
-  have two_pow_ne_zero : 2 ^ x.factorization 2 ≠ 0 := pow_ne_zero _ two_ne_zero
-  have two_pow_le_x : 2 ^ x.factorization 2 ≤ x := le_of_dvd (pos_iff_ne_zero.mpr x_ne_zero) (two_pow_dvd x)
-  have hofx_ne_zero : hof x ≠ 0 := Nat.div_ne_zero_iff.mpr ⟨two_pow_ne_zero, two_pow_le_x⟩
-  have pow_succ_not_dvd : ¬ 2 ^ (x.factorization 2 + 1) ∣ x := pow_succ_factorization_not_dvd x_ne_zero prime_two
-  by_contra contra
-  rw [Nat.not_odd_iff_even, even_iff_two_dvd] at contra
-  rw [← factorization_le_iff_dvd two_ne_zero hofx_ne_zero] at contra
-  have pow_succ_dvd : 2 ^ (x.factorization 2 + 1) ∣ x := by
-    rw [← factorization_le_iff_dvd (pow_ne_zero _ two_ne_zero) x_ne_zero]
-    nth_rewrite 2 [← two_pow_mul_hof_eq_self x]
-    rw [Nat.factorization_mul (pow_ne_zero _ two_ne_zero) hofx_ne_zero]
-    intro p
-    by_cases two : 2 = p
-    · simp [← two]
-      rw [prime_factorization_self prime_two]
-      simp
-      have contra_two := contra 2
-      rw [prime_factorization_self prime_two] at contra_two
-      exact contra_two
-    · simp
-      rw [prime_factorization_diff prime_two two]
-      simp
-  contradiction
+-- Lemmas that Hanzhe uses
+lemma hof_is_odd {x : ℕ} (x_ne_zero : x ≠ 0) : Odd (hof x) := by
+  rw [← not_even_iff_odd, even_iff_two_dvd]
+  exact not_dvd_ordCompl prime_two x_ne_zero
+
+lemma hof_ne_zero_of_ne_zero {n : ℕ} (n_ne_zero : n ≠ 0) : hof n ≠ 0 := Nat.pos_iff_ne_zero.mp (ordCompl_pos 2 n_ne_zero)
+
+lemma hof_zero_iff_zero (n : ℕ) : n = 0 ↔ hof n = 0 := by
+  constructor
+  · intro n_eq_zero
+    simp [n_eq_zero, hof]
+  · contrapose
+    exact hof_ne_zero_of_ne_zero
+
+lemma hof_eq_of_odd {n : ℕ} (hodd : Odd n) : hof n = n := ((hof_eq_iff_odd_or_zero n).mpr (Or.inr hodd))
+
+lemma hof_two_pow_mul (x i : ℕ) : hof (2 ^ i * x) = hof (x) := ordCompl_mul_PrimePow_eq_self x i prime_two
+
+lemma hof_dvd (b : ℕ) : hof b ∣ b := ordCompl_dvd b 2
+
+lemma hof_div_eq_two_pow {n : ℕ} (n_ne_zero : n ≠ 0): ∃ k : ℕ, 2 ^ k = n / hof n := by
+  unfold hof
+  sorry
+
+lemma hof_mul_two_pow_eq (n : ℕ) : ∃ (k : ℕ), 2 ^ k * hof n = n := by
+  exists_eq_pow_mul_and_not_dvd
+  sorry
+
+lemma hof_le (b : ℕ) : hof b ≤ b := ordCompl_le b 2
+
+--End of Lemmas
 
 lemma FromOddPart_hof {n : ℕ} (P : n.Partition) (P_odd : P ∈ (odds n)) (a : ℕ) :
     ∀ b ∈ FromOddPart P a, hof b = a := by
@@ -210,7 +188,8 @@ lemma FromOddPart_hof {n : ℕ} (P : n.Partition) (P_odd : P ∈ (odds n)) (a : 
     simp at hx
     rcases hx with ⟨i, hi, hx⟩
     rw [← hb, ← hx, hof_two_pow_mul a i]
-    apply hof_eq_of_odd a
+    apply (hof_eq_iff_odd_or_zero a).mpr
+    right
     apply Nat.not_even_iff_odd.mp
     exact (Finset.mem_filter.mp P_odd).2 a ha
   · rw [FromOddPart_empty_of_notMem P a ha] at hb
@@ -279,7 +258,7 @@ lemma FromDistPart_pos {n : ℕ} (Q : n.Partition) (b : ℕ) (hb : b ∈ Q.parts
   constructor
   · exact pow_ne_zero _ two_ne_zero
   · have b_pos : b > 0 := Q.parts_pos hb
-    apply le_of_dvd b_pos (two_pow_dvd b)
+    apply le_of_dvd b_pos (ordProj_dvd b 2)
 
 lemma FromDistPart'_pos {n : ℕ} (Q : n.Partition) (a : ℕ) (ha : Odd a) {a' : ℕ} :
     a' ∈ (FromDistPart' Q a) → a' > 0 := by
@@ -296,7 +275,7 @@ lemma FromDistPart_sum (b : ℕ) : (FromDistPart b).sum = b := by
   simp only [Multiset.sum_replicate, smul_eq_mul]
   by_cases b_zero : b = 0
   · simp [hof, b_zero]
-  · rw [two_pow_mul_hof_eq_self b]
+  · rw [hof, ordProj_mul_ordCompl_eq_self b 2]
 
 lemma FromDistPart'_sum {n : ℕ} (Q : n.Partition) (a : ℕ) : (FromDistPart' Q a).sum = (Same_hof Q a).sum := by
   unfold FromDistPart'
@@ -307,7 +286,7 @@ lemma FromDistPart'_sum {n : ℕ} (Q : n.Partition) (a : ℕ) : (FromDistPart' Q
   apply Multiset.map_congr rfl
   intro x hx
   simp [Same_hof] at hx
-  simp [← hx.2, two_pow_mul_hof_eq_self]
+  simp [← hx.2, hof, ordProj_mul_ordCompl_eq_self]
 
 -- Map from (distinct) partitions to (odd) partitions, only as a multiset : the union of `FromDistPart` of a part `a`
 def FromDist_parts {n : ℕ} (Q : n.Partition) : Multiset ℕ :=
@@ -356,7 +335,7 @@ lemma InOdd {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) : FromDist 
     apply Nat.pos_iff_ne_zero.mp
     apply Q.parts_pos
     apply hb
-  exact hof_odd b b_ne_zero
+  exact hof_is_odd b_ne_zero
 
 lemma LeftInvPart_self {n : ℕ} (P : n.Partition) (P_odd : P ∈ odds n) (a : ℕ) : ∑ b ∈ (FromOddPart P a).toFinset,  Multiset.count a (FromDistPart b) = Multiset.count a P.parts := by
   unfold FromDistPart
@@ -377,7 +356,7 @@ lemma LeftInvPart_self {n : ℕ} (P : n.Partition) (P_odd : P ∈ odds n) (a : �
     rw [Finset.sum_mul]
     have lem1 (b : ℕ) (hb : b ∈ (FromOddPart P a).toFinset) : (2 ^ b.factorization 2) * a = b := by
       rw [← FromOddPart_hof P P_odd a b (Multiset.mem_toFinset.mp hb)]
-      exact two_pow_mul_hof_eq_self b
+      exact ordProj_mul_ordCompl_eq_self b 2
     rw [Finset.sum_congr rfl lem1]
     rw [← FromOddPart_sum P a]
     rw [Finset.sum_multiset_count (FromOddPart P a)]

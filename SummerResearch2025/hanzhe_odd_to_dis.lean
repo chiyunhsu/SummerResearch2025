@@ -59,21 +59,21 @@ def hof : ℕ → ℕ
   if n % 2 = 1 then n
   else hof (n / 2)
 
-lemma hof_is_odd {n:ℕ} (hn_nonzero: n ≠ 0) : hof n % 2 = 1 := by
-  induction' n using Nat.strong_induction_on with n ih
-  cases n with
+lemma hof_is_odd {x : ℕ} (x_ne_zero : x ≠ 0) : hof x % 2 = 1 := by
+  induction' x using Nat.strong_induction_on with x ih
+  cases x with
   | zero    =>
     contradiction
-  | succ n' =>
+  | succ x' =>
     simp[hof]
-    by_cases c: (n' + 1) % 2 = 1
+    by_cases c: (x' + 1) % 2 = 1
     simp[c]
     simp[c]
-    have nsuccle: (n' + 1) / 2 < n' + 1 := by omega
-    have nsuccnonzero: (n' + 1) / 2 ≠ 0 := by omega
-    exact ih ((n' + 1) / 2) nsuccle nsuccnonzero
+    have nsuccle: (x' + 1) / 2 < x' + 1 := by omega
+    have nsuccnonzero: (x' + 1) / 2 ≠ 0 := by omega
+    exact ih ((x' + 1) / 2) nsuccle nsuccnonzero
 
-lemma n_non0_hof_non0 {n:ℕ} (hn_nonzero:n ≠ 0): hof n ≠ 0:=by
+lemma hof_ne_zero_of_ne_zero {n : ℕ} (n_ne_zero : n ≠ 0) : hof n ≠ 0 := by
   induction' n using Nat.strong_induction_on with n ih
   cases n with
   | zero    =>
@@ -87,15 +87,15 @@ lemma n_non0_hof_non0 {n:ℕ} (hn_nonzero:n ≠ 0): hof n ≠ 0:=by
     have temp2: (n.succ / 2) ≠ 0 := by omega
     exact ih (n.succ / 2) temp temp2
 
-lemma hof_zero_iff_n_zero{n:ℕ} :n = 0 ↔ hof n = 0:=by
+lemma hof_zero_iff_zero (n : ℕ) : n = 0 ↔ hof n = 0 := by
   constructor
   intro h
   rw[h]
   simp[hof]
   contrapose
-  exact n_non0_hof_non0
+  exact hof_ne_zero_of_ne_zero
 
-lemma hof_odd_eq_itself{n:ℕ}(hodd:n % 2 = 1):n = hof n :=by
+lemma eq_hof_of_odd {n : ℕ} (hodd : n % 2 = 1) : n = hof n := by
   induction' n using Nat.strong_induction_on with n ih
   cases n with
   | zero    =>
@@ -104,7 +104,7 @@ lemma hof_odd_eq_itself{n:ℕ}(hodd:n % 2 = 1):n = hof n :=by
   unfold hof
   simp[hodd]
 
-lemma hof_same_under_mul_2{x:ℕ}: hof x = hof (x * 2):=by
+lemma hof_mul_two (x : ℕ) : hof x = hof (x * 2) :=by
   induction' x using Nat.strong_induction_on with x ix
   cases x with
   | zero    =>
@@ -119,13 +119,13 @@ lemma hof_same_under_mul_2{x:ℕ}: hof x = hof (x * 2):=by
     have temp: (k.succ)/2 = (x'.succ):=by omega
     by_cases c: x'.succ % 2 = 1
     · simp[c,k_even,temp]
-      exact hof_odd_eq_itself (hodd:=c)
+      exact eq_hof_of_odd (hodd:=c)
     · simp[c,k_even,temp]
       conv_rhs=>
         simp[hof]
         simp[c]
 
-lemma hof_same_undermul_2{n:ℕ}: hof n = hof (n * 2^ x):=by
+lemma hof_mul_two_pow (x n : ℕ) : hof n = hof (n * 2 ^ x):=by
   induction' x using Nat.strong_induction_on with x ix
   cases x with
   | zero    =>
@@ -134,31 +134,31 @@ lemma hof_same_undermul_2{n:ℕ}: hof n = hof (n * 2^ x):=by
   by_cases c: x' = 0
   ·
     simp[c]
-    exact hof_same_under_mul_2
+    exact hof_mul_two n
   · have temp: hof (n * 2 ^ (x' + 1)) = hof (n * 2 ^ (x')):=by
       simp[Nat.two_pow_succ]
       simp[←two_mul]
       simp[mul_left_comm n 2 (2 ^ x')]
       simp[mul_comm 2 (n * 2 ^ x')]
-      exact hof_same_under_mul_2.symm
+      exact (hof_mul_two _).symm
     simp[temp]
     apply ix
     simp
 
-lemma hof_even_is_0 (n:ℕ)(h: (hof n) % 2 = 0): hof n = 0 :=by
+lemma hof_even_is_0 (n : ℕ)(h : (hof n) % 2 = 0) : hof n = 0 := by
   by_cases c: n = 0
   rw[c]
   simp[hof]
-  apply hof_zero_iff_n_zero.not.1 at c
+  apply (hof_zero_iff_zero n).not.1 at c
   false_or_by_contra
   have temp: n ≠ 0 := by
-    exact hof_zero_iff_n_zero.not.2 c
+    exact (hof_zero_iff_zero n).not.2 c
   have temp2: hof n % 2 = 1:= by
-    exact hof_is_odd (hn_nonzero:=temp)
+    exact hof_is_odd (x_ne_zero:=temp)
   rw[h] at temp2
   contradiction
 
-lemma hof_divides (n:ℕ): hof n ∣ n:= by
+lemma hof_dvd (n : ℕ) : hof n ∣ n := by
   induction' n using Nat.strong_induction_on with n ih
   cases n with
   | zero    =>
@@ -178,7 +178,7 @@ lemma hof_divides (n:ℕ): hof n ∣ n:= by
     exact Nat.div_dvd_of_dvd (h := case2)
   exact Nat.dvd_trans (h₁:=temp2) (h₂:=temp3)
 
-lemma hof_divid_n_2tosomepow{n:ℕ}(hn_nonzero:n ≠ 0): ∃ k:ℕ, 2^k = n / hof n := by
+lemma hof_div_eq_two_pow {n : ℕ} (n_ne_zero : n ≠ 0) : ∃ (k : ℕ), 2 ^ k = n / hof n := by
   induction' n using Nat.strong_induction_on with n ih
   cases n with
   | zero    =>
@@ -198,10 +198,10 @@ lemma hof_divid_n_2tosomepow{n:ℕ}(hn_nonzero:n ≠ 0): ∃ k:ℕ, 2^k = n / ho
       rw[←hm]
       rw[←Nat.two_pow_succ]
       use m + 1
-      exact hof_divides ((n'+1)/2)
+      exact hof_dvd ((n'+1)/2)
 
 
-lemma hof_mul_2tosomepow_eq_n{n:ℕ}: ∃ k:ℕ, 2^k * hof n = n  := by
+lemma hof_mul_two_pow_eq (n : ℕ) : ∃ (k : ℕ), 2 ^ k * hof n = n := by
   induction' n using Nat.strong_induction_on with n ih
   cases n with
   | zero    =>
@@ -220,7 +220,7 @@ lemma hof_mul_2tosomepow_eq_n{n:ℕ}: ∃ k:ℕ, 2^k * hof n = n  := by
   simp[Nat.mod_def] at c
   omega
 
-lemma hof_le_n{n:ℕ}: hof n ≤ n := by
+lemma hof_le (n : ℕ) : hof n ≤ n := by
   induction' n using Nat.strong_induction_on with n ih
   cases n with
   | zero    =>
@@ -346,7 +346,7 @@ lemma FromOddPart_hof {n : ℕ} (P : n.Partition) (P_odd : P ∈ (odds n)) (a : 
     rcases hmem with ⟨witness, wmem, hmem⟩
     simp[← hmem]
     have odd_hof_inv : a = hof a := by
-      apply hof_odd_eq_itself
+      apply eq_hof_of_odd
       apply Nat.odd_iff.mp
       apply Nat.not_even_iff_odd.mp
       exact (Finset.mem_filter.mp P_odd).2 a ha
@@ -354,7 +354,7 @@ lemma FromOddPart_hof {n : ℕ} (P : n.Partition) (P_odd : P ∈ (odds n)) (a : 
     conv_rhs =>
       rw [odd_hof_inv]
     symm
-    exact hof_same_undermul_2
+    exact hof_mul_two_pow _ _
   · rw [FromOddPart_empty_of_notMem P a ha] at hmem
     contradiction
 
@@ -462,13 +462,13 @@ lemma InDist (n : ℕ) (P : n.Partition) (hP : P ∈ (odds n)) : FromOdd n P hP 
       rcases hmem with⟨witness,wmem,hmem⟩
       simp[←hmem]
       have n1_odd_hof_inv: n = hof n:=by
-        apply hof_odd_eq_itself
+        apply eq_hof_of_odd
         exact hnodd
       rw[mul_comm]
       conv_rhs =>
         rw[n1_odd_hof_inv]
       symm
-      exact hof_same_undermul_2
+      exact hof_mul_two_pow
     have img_ofa_hof_notb(a:ℕ)(hamem:a∈P.parts)(b:ℕ)(hbmem:b∈P.parts)(habne:b≠a):
     ∀ x ∈ f a, hof x ≠ b:=by
       intro x xmem
@@ -521,7 +521,7 @@ lemma FromDis_parts_sum (n : ℕ) (P : n.Partition) (hP : P ∈ (distincts n)) :
   have temp2: ∀ x ∈ P.parts, x / hof x * hof x = x:=by
     intro x hx
     have temp := by
-      exact hof_divides x
+      exact hof_dvd x
     exact Nat.div_mul_cancel temp
   have map_simp : P.parts.map (fun x => x / hof x * hof x) = P.parts.map (fun x => x) := by
     apply Multiset.map_congr
@@ -589,7 +589,7 @@ lemma left_inv (n : ℕ)(p1 : n.Partition) (h1odd : p1 ∈ odds n) : FromDis n (
         simp [f]
         rcases mem_binary_is_power_of_two  hb with ⟨i, rfl⟩
         simp [Nat.mul_comm]
-        simp [←hof_same_undermul_2 (x:= i), ←hof_odd_eq_itself (hodd:=hodd), Nat.mul_div_right (H := hpos)]
+        simp [←hof_mul_two_pow (x:= i), ←eq_hof_of_odd (hodd:=hodd), Nat.mul_div_right (H := hpos)]
       rw [temp]
       simp [Multiset.count_replicate]
       exact binary_sum k
@@ -611,9 +611,9 @@ lemma left_inv (n : ℕ)(p1 : n.Partition) (h1odd : p1 ∈ odds n) : FromDis n (
         unfold f
         have alg_temp: hof (2 ^ j * x) = hof x := by
           rw[Nat.mul_comm (n:= 2 ^ j) (m:= x)]
-          rw[←hof_same_undermul_2]
+          rw[←hof_mul_two_pow]
         rw[alg_temp]
-        rw[←hof_odd_eq_itself (n:=x) (hodd:=hodd)]
+        rw[←eq_hof_of_odd (n:=x) (hodd:=hodd)]
         simp?
         apply Nat.mul_div_left
         exact hpos
@@ -666,8 +666,8 @@ lemma hof_mem {n: ℕ} (p1: Partition n) {B : Multiset ℕ}(hB: B = p1.parts.bin
       simp?
       constructor
       rcases p1_parts_pos_and_non_zero y hy with ⟨hpos, hneq0⟩
-      exact hof_zero_iff_n_zero.not.1 hneq0
-      exact hof_le_n
+      exact (hof_zero_iff_zero y).not.1 hneq0
+      exact hof_le y
     rw[hB]
     exact Multiset.mem_bind.2 ⟨y, hy, this⟩
   exact Multiset.mem_toFinset.2 this
@@ -718,7 +718,7 @@ lemma odd_of_mem_B {n : ℕ} {p1 : Partition n} {B : Multiset ℕ} (hB : B = p1.
   have y_nonzero : y ≠ 0 :=  Nat.ne_zero_of_lt (p1.parts_pos hy_parts)
   have hx_eq : x = hof y := by
     simp [List.mem_replicate.1 hx_rep]
-  have hodd : (hof y) % 2 = 1 := hof_is_odd (n := y) (hn_nonzero := y_nonzero)
+  have hodd : (hof y) % 2 = 1 := hof_is_odd (x := y) (x_ne_zero := y_nonzero)
   simpa [hx_eq] using hodd
 
 lemma pos_of_mem_B  {n : ℕ} {p1 : Partition n} {B : Multiset ℕ} (hB : B = p1.parts.bind (fun y => ↑(List.replicate (y / hof y) (hof y)))) {x : ℕ} (hx : x ∈ B.toFinset) : x ≠ 0 := by
@@ -782,7 +782,7 @@ lemma parts_pos_non_zero {n : ℕ} (p1 : n.Partition) : ∀ x ∈ p1.parts, x �
 
 lemma parts_pos_hof_non_zero {n : ℕ} (p1 : n.Partition) : ∀ x ∈ p1.parts, hof x ≠ 0 := by
   intro x hx
-  exact hof_zero_iff_n_zero.not.1 (parts_pos_non_zero p1 x hx)
+  exact (hof_zero_iff_zero x).not.1 (parts_pos_non_zero p1 x hx)
 
 lemma binary_c_rw
   {n x k a c : ℕ} {p1 : n.Partition}
@@ -805,7 +805,7 @@ lemma binary_c_rw
         intro x hx heq
         constructor
         exact parts_pos_hof_non_zero p1 x hx
-        exact hof_le_n (n:=x)
+        exact hof_le (n := x)
       · simp[m0,m1,h0,Multiset.count_map]
         apply congrArg
         apply Multiset.filter_congr
@@ -838,12 +838,12 @@ lemma binary_c_rw
       (hb : b ∈ (Multiset.filter (fun y ↦ hof y = x) p1.parts))
       (heq : a / hof a = b / hof b) :
     a = b := by
-      obtain ⟨ka, hka⟩ := hof_divid_n_2tosomepow (parts_pos_non_zero p1 a (Multiset.mem_of_mem_filter ha))
-      obtain ⟨kb, hkb⟩ := hof_divid_n_2tosomepow (parts_pos_non_zero p1 b (Multiset.mem_of_mem_filter hb))
+      obtain ⟨ka, hka⟩ := hof_div_eq_two_pow (parts_pos_non_zero p1 a (Multiset.mem_of_mem_filter ha))
+      obtain ⟨kb, hkb⟩ := hof_div_eq_two_pow (parts_pos_non_zero p1 b (Multiset.mem_of_mem_filter hb))
       simp [←hka, ←hkb] at heq
       calc
         a = hof a * (a / hof a) :=
-          (Nat.mul_div_cancel' (hof_divides (n := a))).symm
+          (Nat.mul_div_cancel' (hof_dvd (n := a))).symm
         _ = hof a * 2 ^ ka :=
           congrArg (fun t => hof a * t) hka.symm
         _ = hof b * 2 ^ ka :=
@@ -853,7 +853,7 @@ lemma binary_c_rw
         _ = hof b * (b / hof b) := by
           simp [hkb]
         _ = b :=
-          Nat.mul_div_cancel' (hof_divides (n := b))
+          Nat.mul_div_cancel' (hof_dvd (n := b))
     apply filter_nodup.map_on
     intro x hx y hy hxy
     exact q_inj_on_filter x y hx hy hxy
@@ -876,8 +876,8 @@ lemma binary_c_rw
       simp [L,S] at ha hb
       rcases ha with ⟨sa, hsa, rfl⟩
       rcases hb with ⟨sb, hsb, rfl⟩
-      rcases hof_divid_n_2tosomepow (parts_pos_non_zero p1 sa hsa.1) with ⟨ka, hka⟩
-      rcases hof_divid_n_2tosomepow (parts_pos_non_zero p1 sb hsb.1) with ⟨kb, hkb⟩
+      rcases hof_div_eq_two_pow (parts_pos_non_zero p1 sa hsa.1) with ⟨ka, hka⟩
+      rcases hof_div_eq_two_pow (parts_pos_non_zero p1 sb hsb.1) with ⟨kb, hkb⟩
       simp [←hka, ←hkb, Nat.log_pow] at hab
       simp [←hka, ←hkb]
       exact hab
@@ -904,11 +904,11 @@ lemma binary_c_rw
         use a
         constructor
         exact ha
-        rcases hof_divid_n_2tosomepow (n := a) (hn_nonzero := (parts_pos_non_zero p1 a ha.1)) with ⟨k, hk⟩
+        rcases hof_div_eq_two_pow (n := a) (n_ne_zero := (parts_pos_non_zero p1 a ha.1)) with ⟨k, hk⟩
         simp [←hk, ←ha1]
       simp at this
       rcases this with ⟨k, ⟨hkmem,hkhof⟩⟩
-      rcases hof_divid_n_2tosomepow (n:=k) (hn_nonzero:=parts_pos_non_zero p1 k hkmem.1) with ⟨ka, hka⟩
+      rcases hof_div_eq_two_pow (n:=k) (n_ne_zero:=parts_pos_non_zero p1 k hkmem.1) with ⟨ka, hka⟩
       simp [←hka] at hkhof
       use ka
       exact hkhof.symm
@@ -940,7 +940,7 @@ lemma binary_c_rw
 
   intro h
   rcases h with ⟨y, hy, rfl⟩
-  rcases hof_divid_n_2tosomepow (n:=y) (hn_nonzero:=parts_pos_non_zero p1 y hy.1) with ⟨ky, hky⟩
+  rcases hof_div_eq_two_pow (n:=y) (n_ne_zero:=parts_pos_non_zero p1 y hy.1) with ⟨ky, hky⟩
   simp [←hky, Nat.log_pow] at hk
   use y
   constructor
@@ -949,7 +949,7 @@ lemma binary_c_rw
 
   intro h
   rcases h with ⟨y, hy, rfl⟩
-  rcases hof_divid_n_2tosomepow (n:=y) (hn_nonzero:=parts_pos_non_zero p1 y hy.1) with ⟨ky, hky⟩
+  rcases hof_div_eq_two_pow (n:=y) (n_ne_zero:=parts_pos_non_zero p1 y hy.1) with ⟨ky, hky⟩
   use y
   constructor
   exact hy
@@ -973,13 +973,13 @@ lemma part_iff_bit3
         _ = (hof a * 2 ^ k) / hof a := by
           simp [hk]
         _  = 2 ^ k := by
-          have hpos : 0 < hof a := Nat.pos_of_ne_zero (hof_zero_iff_n_zero.not.1 (parts_pos_non_zero p1 a hamem))
+          have hpos : 0 < hof a := Nat.pos_of_ne_zero ((hof_zero_iff_zero a).not.1 (parts_pos_non_zero p1 a hamem))
           simp [Nat.mul_comm (m := 2 ^ k), Nat.mul_div_left (H := hpos)]
     simp [this]
     exact ⟨hamem, hax⟩
     intro h
     rcases h with ⟨y, hy, rfl⟩
-    rcases hof_divid_n_2tosomepow (n:=y) (hn_nonzero:=parts_pos_non_zero p1 y hy.1) with ⟨ky, hky⟩
+    rcases hof_div_eq_two_pow (n:=y) (n_ne_zero:=parts_pos_non_zero p1 y hy.1) with ⟨ky, hky⟩
     simp [←hky, Nat.log_pow] at hk
     have : a = y := by
       calc
@@ -991,7 +991,7 @@ lemma part_iff_bit3
         simpa [this]
       _ = y := by
         have hdiv : x ∣ y := by
-          simpa [hy.2] using hof_divides (n := y)
+          simpa [hy.2] using hof_dvd (n := y)
         simp [Nat.mul_div_cancel' hdiv]
     rw[this]
     exact hy.1
@@ -1001,7 +1001,7 @@ lemma map_binary_eq_filter2 (p1 : Partition n) (hp: p1 ∈ distincts n) {x : ℕ
   have nodup_parts : p1.parts.Nodup := by simpa [distincts] using (Finset.mem_filter.1 hp).2
   ext a
   by_cases hax : hof a = x
-  · rcases hof_mul_2tosomepow_eq_n (n:=a) with ⟨k, hk⟩
+  · rcases hof_mul_two_pow_eq (n:=a) with ⟨k, hk⟩
     simp [hax, Nat.mul_comm] at hk
     set c : ℕ := Multiset.count x B with hc
     calc
@@ -1023,7 +1023,7 @@ lemma map_binary_eq_filter2 (p1 : Partition n) (hp: p1 ∈ distincts n) {x : ℕ
         rcases Multiset.mem_map.1 hmem with ⟨w, hw, rfl⟩
         rcases mem_binary_is_power_of_two (x:=w) (n:= (Multiset.count x B)) hw with ⟨j, hj⟩
         have : hof (w * x) = x := by
-          simp [hj, Nat.mul_comm, ← hof_same_undermul_2, ← hof_odd_eq_itself (hodd:=(odd_of_mem_B hB hx))]
+          simp [hj, Nat.mul_comm, ← hof_mul_two_pow, ← eq_hof_of_odd (hodd:=(odd_of_mem_B hB hx))]
         exact hax this
      0 = Multiset.count a (Multiset.filter (fun b ↦ hof b = x) p1.parts) := by
         symm

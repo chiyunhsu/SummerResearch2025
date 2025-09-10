@@ -16,12 +16,6 @@ open Nat Partition Multiset Finset
 #check Multiset.sort
 #check Finset.single_le_sum
 
-lemma odd_is_odd (n : ℕ) (hodd: Odd n) : n % 2 = 1 := by
-  unfold Odd at hodd
-  rw [Nat.mod_def]
-  rcases hodd with ⟨q,hq⟩
-  omega
-
 def binary (n : ℕ): Multiset ℕ := n.bitIndices.map fun i => 2 ^ i
 
 lemma mem_binary_is_power_of_two {x n : ℕ} : x ∈ binary n → ∃ k, x = 2 ^ k := by
@@ -353,7 +347,7 @@ lemma FromOddPart_hof {n : ℕ} (P : n.Partition) (P_odd : P ∈ (odds n)) (a : 
     simp[← hmem]
     have odd_hof_inv : a = hof a := by
       apply hof_odd_eq_itself
-      apply odd_is_odd
+      apply Nat.odd_iff.mp
       apply Nat.not_even_iff_odd.mp
       exact (Finset.mem_filter.mp P_odd).2 a ha
     rw [mul_comm]
@@ -574,7 +568,7 @@ lemma left_inv (n : ℕ)(p1 : n.Partition) (h1odd : p1 ∈ odds n) : FromDis n (
     unfold odds at h1odd
     simp at h1odd
     specialize h1odd x
-    apply odd_is_odd
+    apply Nat.odd_iff.mp
     exact h1odd hx
   have aux_inp1_pos: ∀ x ∈ p1.parts, 0 < x := by
     intro x hx
@@ -1037,7 +1031,7 @@ lemma map_binary_eq_filter2 (p1 : Partition n) (hp: p1 ∈ distincts n) {x : ℕ
         intro hmem
         exact hax ((Multiset.mem_filter.1 hmem).2)
 
-lemma right_in3 (n : ℕ) (p1 : n.Partition) (hb : p1 ∈ distincts n) : FromOdd n (FromDis n p1 hb) (InOdd n p1 hb) = p1 := by
+lemma right_inv (n : ℕ) (p1 : n.Partition) (hb : p1 ∈ distincts n) : FromOdd n (FromDis n p1 hb) (InOdd n p1 hb) = p1 := by
   unfold FromDis FromOdd FromOdd_parts FromDis_parts
   ext1
   simp only [Subtype.forall, Subtype.mk.injEq]
@@ -1054,4 +1048,4 @@ lemma right_in3 (n : ℕ) (p1 : n.Partition) (hb : p1 ∈ distincts n) : FromOdd
 
 -- Euler's identity states that the number of odd partitions of `n` is equal to the number of distinct partitions of `n`.
 theorem EulerIdentity (n : ℕ) : (odds n).card = (distincts n).card :=
-  card_bij' (FromOdd n) (FromDis n) (InDist n) (InOdd n) (left_inv n) (right_in3 n)
+  card_bij' (FromOdd n) (FromDis n) (InDist n) (InOdd n) (left_inv n) (right_inv n)

@@ -744,10 +744,55 @@ theorem FermatTriangle (P : PyTriple) : ¬ isSquare (Area P) := by
     rw [← Nat.not_even_iff_odd] at odd_s2
     contradiction
 
+  have rbig : r > s := by sorry
+
   have even_rs_sum : Even (r + s) := Odd.add_odd odd_r odd_s
   have even_rs_diff : Even (r - s) := Nat.Odd.sub_odd odd_r odd_s
 
   -- one of r+s or r-s is divisible by 4
+  have div4 : 4 ∣ (r + s) ∨ 4 ∣ (r - s) := by
+    have div2_sum : 2 ∣ (r + s) := Even.two_dvd even_rs_sum
+    have div2_diff : 2 ∣ (r - s) := Even.two_dvd even_rs_diff
+
+    by_cases hdiff : 4 ∣ (r - s)
+    · exact Or.inr hdiff
+    · left
+      apply Nat.dvd_of_mod_eq_zero
+      have mod2 : (r - s) % 2 = 0 := Nat.mod_eq_zero_of_dvd div2_diff
+      have mod4 : (r - s) % 4 ≠ 0 := by
+        intro h
+        have := Nat.dvd_of_mod_eq_zero h
+        contradiction
+
+      have diffmod4 : (r - s) % 4 = 2 := by
+        have diff_even : Even (r - s) := Nat.Odd.sub_odd odd_r odd_s
+        rcases diff_even with ⟨k, hk⟩
+        rw [hk]
+        by_cases hk : Even k
+        · rcases hk with ⟨m, rfl⟩
+          omega
+        · rw [Nat.not_even_iff_odd] at hk
+          rcases hk with ⟨m, rfl⟩
+          calc
+          (2 * m + 1 + (2 * m + 1)) % 4 = (4 * m + 2) % 4 := by congr 1; ring
+          _ = 2 := by norm_num
+      have smod4 : 2 * s % 4 = 2 := by
+        rcases odd_s with ⟨k, rfl⟩
+        calc
+        (2 * (2 * k + 1)) % 4 = (4 * k + 2) % 4 := by congr 1; ring
+        _ = 2 := by norm_num
+      calc
+        (r + s) % 4
+          = ((r - s) + 2 * s) % 4 := by
+          congr 1
+          apply Int.natCast_inj.mp
+          simp[Int.natCast_sub (le_of_lt rbig)]
+          ring
+        _ = ((r - s) % 4 + (2 * s) % 4) % 4 := by rw [Nat.add_mod]
+        _ = (2 + 2) % 4 := by rw [diffmod4, smod4]
+        _ = 0 := by norm_num
+
+
   -- u = (r+s)/2, v = (r-s)/2, one of which is even
   -- u^2 + v^2 = (r+s)^2/4 + (r-s)^2/4 = (2r^2 + 2s^2)/4 = (r^2 + s^2)/2 = p^2
   -- Area : uv/2 = (r+s)/2 * (r-s)/2 * 1/2 = (r^2 - s^2)/8 = ((p+q) - (p-q))/8 = 2q/8 = q/4

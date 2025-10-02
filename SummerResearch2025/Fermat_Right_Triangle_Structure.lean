@@ -655,9 +655,25 @@ theorem PyTripleToParam (P : PyTriple) : ∃ gp : GoodParam, P = ParamToTriple g
   exact gp_y
   exact gp_z
 
+def Fermat (n : ℕ) : Prop := (∃ (P : PyTriple), n = Area P) → ¬ isSquare n
+noncomputable instance : DecidablePred Fermat := Classical.decPred _
 
-theorem FermatTriangle (P : PyTriple) : ¬ isSquare (Area P) := by
-  rintro ⟨k, hk⟩
+theorem FermatTriangle
+--(P : PyTriple) : ¬ isSquare (Area P) := by
+: ∀ (n : ℕ), Fermat n := by
+  by_contra contra
+  push_neg at contra
+  let n := Nat.find contra
+  have sq_n : ¬Fermat n := Nat.find_spec contra
+  have min_n : ∀ {m : ℕ}, m < n → Fermat m := by
+    intro m hm
+    have := Nat.find_min contra hm
+    simp at this
+    exact this
+
+  simp [Fermat] at sq_n
+  rcases sq_n with ⟨⟨P, hP⟩, k, hk⟩
+  rw [hP] at hk
   rcases PyTripleToParam P with ⟨gp, hgp⟩
 
   have h_area : Area P = gp.p * gp.q * (gp.p^2 - gp.q^2) := by
@@ -792,9 +808,37 @@ theorem FermatTriangle (P : PyTriple) : ¬ isSquare (Area P) := by
         _ = (2 + 2) % 4 := by rw [diffmod4, smod4]
         _ = 0 := by norm_num
 
-
+  let u := (r + s) / 2
+  let v := (r - s) / 2
   -- u = (r+s)/2, v = (r-s)/2, one of which is even
+  have div2 : 2 ∣ u ∨ 2 ∣ v := by
+    rcases div4 with div_sum | div_diff
+    · left
+      apply Nat.dvd_div_of_mul_dvd
+      exact div_sum
+    · right
+      apply Nat.dvd_div_of_mul_dvd
+      exact div_diff
+
+  have u_big : v < u := by sorry
+  have uv_coprime : Nat.gcd u v = 1 := by sorry
+  have uv_parity : Even u ∧ Odd v ∨ Odd u ∧ Even v := by sorry
+  have uv_pos : 0 < v := by sorry
+
+  let gu := GoodParam.mk u v u_big uv_coprime uv_parity uv_pos
+  let P' := ParamToTriple gu
+  let m := Area P'
+  have hm : m = Area P' := rfl
+
   -- u^2 + v^2 = (r+s)^2/4 + (r-s)^2/4 = (2r^2 + 2s^2)/4 = (r^2 + s^2)/2 = p^2
   -- Area : uv/2 = (r+s)/2 * (r-s)/2 * 1/2 = (r^2 - s^2)/8 = ((p+q) - (p-q))/8 = 2q/8 = q/4
+  have area_eq : m = (gp.q) / 4 := by
+    simp [m, Area, P', ParamToTriple, gu]
+    sorry
+
+  have m_small : m < n := by sorry
+  have nonsq_m : ¬ isSquare m := by
+    simp [Fermat] at min_n
+    exact (min_n m_small P' hm)
 
   sorry

@@ -732,7 +732,7 @@ theorem FermatTriangle
 
     exact ⟨hsq_p, hsq_q, hsq_sum, hsq_diff⟩
 
-  rcases factors_sqs sq_area with ⟨_, _, ⟨r, hr⟩, ⟨s, hs⟩⟩
+  rcases factors_sqs sq_area with ⟨hsqp, hsqq, ⟨r, hr⟩, ⟨s, hs⟩⟩
 
   have odd_r2 : Odd (r^2) := by
     rw [hr]
@@ -760,7 +760,14 @@ theorem FermatTriangle
     rw [← Nat.not_even_iff_odd] at odd_s2
     contradiction
 
-  have rbig : r > s := by sorry
+  have rbig : r > s := by
+    by_contra h
+    push_neg at h
+    rw [← sq_le_sq₀ (zero_le r) (zero_le s)] at h
+    rw [hr, hs] at h
+    have h' : gp.p + gp.q > gp.p - gp.q := by
+      exact Nat.lt_of_le_of_lt (Nat.sub_le _ _) (lt_add_of_pos_right _ gp.positive)
+    exact Nat.not_le_of_gt h' h
 
   have even_rs_sum : Even (r + s) := Odd.add_odd odd_r odd_s
   have even_rs_diff : Even (r - s) := Nat.Odd.sub_odd odd_r odd_s
@@ -820,20 +827,37 @@ theorem FermatTriangle
       apply Nat.dvd_div_of_mul_dvd
       exact div_diff
 
-  have u_big : v < u := by sorry
-  have uv_coprime : Nat.gcd u v = 1 := by sorry
-  have uv_parity : Even u ∧ Odd v ∨ Odd u ∧ Even v := by sorry
-  have uv_pos : 0 < v := by sorry
+  -- have u_big : v < u := by
+  --   simp [u, v]
+  --   rw [Nat.div_lt_iff_lt_mul two_pos]
+  --   rw [← (Nat.div_eq_iff_eq_mul_left two_pos (even_iff_two_dvd.mp even_rs_sum)).mp rfl]
+  --   have spos : s > 0 := by
+  --     rcases odd_s with ⟨k, rfl⟩
+  --     exact Nat.succ_pos (2 * k)
+  --   exact Nat.lt_of_le_of_lt (Nat.sub_le r s) (lt_add_of_pos_right r spos)
 
-  let gu := GoodParam.mk u v u_big uv_coprime uv_parity uv_pos
-  let P' := ParamToTriple gu
+  have uv_sq : isSquare (u ^ 2 + v ^ 2) := by sorry
+  rcases uv_sq with ⟨w, uv_py⟩
+
+  have uv_coprime : Nat.gcd u v = 1 := by sorry
+
+  have uv_parity : Even u := by sorry
+  have uv_nonzero : 0 < u := by sorry
+
+  let P' := PyTriple.mk u v w uv_parity uv_coprime uv_py.symm uv_nonzero
   let m := Area P'
   have hm : m = Area P' := rfl
 
   -- u^2 + v^2 = (r+s)^2/4 + (r-s)^2/4 = (2r^2 + 2s^2)/4 = (r^2 + s^2)/2 = p^2
   -- Area : uv/2 = (r+s)/2 * (r-s)/2 * 1/2 = (r^2 - s^2)/8 = ((p+q) - (p-q))/8 = 2q/8 = q/4
   have area_eq : m = (gp.q) / 4 := by
-    simp [m, Area, P', ParamToTriple, gu]
+    simp [m, Area, P', u, v]
+    sorry
+
+  have sq_m : isSquare m := by
+    rcases hsqq with ⟨q0, hq0⟩
+    rw [area_eq, ← hq0]
+    use q0 / 2
     sorry
 
   have m_small : m < n := by sorry
@@ -841,4 +865,4 @@ theorem FermatTriangle
     simp [Fermat] at min_n
     exact (min_n m_small P' hm)
 
-  sorry
+  contradiction

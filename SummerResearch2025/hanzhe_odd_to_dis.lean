@@ -397,111 +397,6 @@ lemma InDist (n : ℕ) (P : n.Partition) (hP : P ∈ (odds n)) : FromOdd n P hP 
     rw [Multiset.mem_sort] at ha ha'
     dsimp[Function.onFun]
     exact FromOddPart_disjoint P hP a a' hneq
-/-
-  let img: Partition n := (FromOdd n P hP)
-  unfold distincts
-  simp
-  unfold FromOdd
-  simp
-  unfold FromOdd_parts
-  have Finsetsum_eq_Bind: ∑ a ∈ P.parts.toFinset, (binary (Multiset.count a P.parts)).map (fun y ↦ y * a) =  Multiset.bind P.parts.toFinset.val (fun a ↦
-    (binary (Multiset.count a P.parts)).map (fun y ↦ y * a)) := by
-    rfl
-  rw [Finsetsum_eq_Bind]
-  --P.parts.toFinset.val.bind is the pullback
-  apply Multiset.nodup_bind.mpr
-  constructor
-  · rintro a a_in_parts
-    apply Multiset.Nodup.map
-    -- fun y => y * a is injective
-    · rintro y1 y2 heq
-      dsimp at heq
-      have a_nonzero : a ≠ 0 := by
-        apply Nat.pos_iff_ne_zero.mp
-        apply P.parts_pos
-        apply Multiset.mem_toFinset.mp a_in_parts
-      exact (Nat.mul_left_inj a_nonzero).mp heq
-    -- binary has no duplicates
-    · unfold binary
-      apply Multiset.coe_nodup.mpr
-      exact List.Nodup.map (Nat.pow_right_injective (le_refl 2)) (List.Sorted.nodup (bitIndices_sorted))
-      /- Suggest to add
-      theorem bitIndices_nodup {n : ℕ} : n.bitIndices.Nodup := List.Sorted.nodup (bitIndices_sorted)
-      to Nat/BitIndices.lean
-      -/
-  -- pairwise disjoint
-  ·
-    unfold Multiset.Pairwise
-    use P.parts.toFinset.val.toList
-    simp[Multiset.coe_toList]
-    let f : ℕ → Multiset ℕ :=  (fun a ↦(binary (Multiset.count a P.parts)).map (fun y ↦ y * a))
-    apply(List.pairwiseDisjoint_iff_coe_toFinset_pairwise_disjoint
-        (l:= P.parts.dedup.toList)
-        (f:= f)
-        (hn:= (Finset.nodup_toList (s:=P.parts.toFinset)))
-      ).1
-    simp only [List.coe_toFinset, Multiset.mem_toList, mem_dedup]
-    intro n1 hn1mem n2 hn2mem hn1nen2
-    have n_odd(n:ℕ)(hnmem:n∈ P.parts): n%2 = 1:=by
-      simp at hnmem
-      unfold odds at hP
-      simp at hP
-      specialize hP n
-      simp[hnmem] at hP
-      have alg_temp: 2 * (n / 2) + 1 = n := by exact Nat.two_mul_div_two_add_one_of_odd hP
-      have alg_tempsymm:  n = 2 * (n / 2) + 1:= by omega
-      have alg_temp2 : n - 2* ( n / 2) = 1 := by exact Nat.sub_eq_of_eq_add' (a := n) (b:= 2* ( n / 2)) (c:= 1) alg_tempsymm
-      simp[Nat.mod_def]
-      exact alg_temp2
-    have hof_same_one_image(n:ℕ)(hnmem:n∈P.parts)(hnodd:n%2 = 1): ∀ x ∈ f n, hof x = n:= by
-      intro x hmem
-      unfold f at hmem
-      unfold binary at hmem
-      let t := (Multiset.count n1 P.parts)
-      simp[t] at hmem
-      rcases hmem with⟨witness,wmem,hmem⟩
-      simp[←hmem]
-      have n1_odd_hof_inv: n = hof n:=by
-        apply eq_hof_of_odd
-        exact hnodd
-      rw[mul_comm]
-      conv_rhs =>
-        rw[n1_odd_hof_inv]
-      symm
-      exact hof_mul_two_pow
-    have img_ofa_hof_notb(a:ℕ)(hamem:a∈P.parts)(b:ℕ)(hbmem:b∈P.parts)(habne:b≠a):
-    ∀ x ∈ f a, hof x ≠ b:=by
-      intro x xmem
-      by_contra contra
-      have hof_a: hof x = a := by
-        specialize hof_same_one_image a hamem (n_odd a hamem) x
-        exact hof_same_one_image xmem
-      simp[contra] at hof_a
-      exact habne hof_a
-    have subset_ofimg_same_hof(n:ℕ)(hnmem:n∈P.parts)(sub:Multiset ℕ)(hsub:sub≤(f n)):
-      ∀ x ∈ sub, hof x = n := by
-      intro x xmem
-      have hsub' :sub ⊆ f n := by
-        exact Multiset.subset_of_le hsub
-      have temp: x ∈ f n:=by
-        exact Multiset.mem_of_subset (h:= hsub') xmem
-      specialize hof_same_one_image n hnmem (n_odd n hnmem) x temp
-      exact hof_same_one_image
-    simp[Disjoint]
-    intro s1 s1_infn1 s1_infn2
-    by_contra contra
-    rcases Multiset.exists_mem_of_ne_zero contra with ⟨x, hx⟩
-    have x_hof_n1: hof x = n1 :=by
-      specialize subset_ofimg_same_hof n1 hn1mem s1 s1_infn1 x hx
-      exact subset_ofimg_same_hof
-    have x_hof_n2: hof x = n2 :=by
-      specialize subset_ofimg_same_hof n2 hn2mem s1 s1_infn2 x hx
-      exact subset_ofimg_same_hof
-    have false: n1 = n2 := by
-      rw [x_hof_n1] at x_hof_n2
-      exact x_hof_n2
-    exact hn1nen2 false
--/
 
 def FromDis_parts (n : ℕ) (P : n.Partition) (_ : P ∈ (distincts n)): Multiset ℕ :=
 (P.parts).bind fun y ↦ Multiset.ofList (List.replicate (y/(hof y)) (hof y))
@@ -648,11 +543,6 @@ lemma left_inv (n : ℕ)(p1 : n.Partition) (h1odd : p1 ∈ odds n) : FromDis n (
       exact hne.1
       simp?
 
-/-
-everything here below are the lemma necessary to prove right inverse, we proove the right inverse through a series of rewrites
--/
--- have : (∑ x ∈ (B ).toFinset, p1.parts.filter (fun y ↦  hof y = x)) = p1.parts.filter (fun y ↦ hof y ∈ (B).toFinset) := by
-
 lemma hof_mem {n: ℕ} (p1: Partition n) {B : Multiset ℕ}(hB: B = p1.parts.bind fun y ↦ List.replicate (y / hof y) (hof y)):
 ∀ {y : ℕ}, y ∈ p1.parts → hof y ∈ (B).toFinset := by
   have p1_parts_pos_and_non_zero : ∀ x ∈ p1.parts, 0 < x ∧ x ≠ 0 := by
@@ -792,9 +682,6 @@ lemma binary_c_rw
   (hc : c = Multiset.count x B):
   2 ^ k ∈ binary c ↔ (k ∈ List.map log2 (Multiset.sort (fun x1 x2 => x1 ≤ x2) (Multiset.map (fun x => x / hof x) (Multiset.filter (fun y => hof y = x) p1.parts)))):= by
   simp [hc, hB, Multiset.count_bind, binary, count_replicate_hof_actual]
---
---can get rid of m0 mexp m1 and maybe use a big calc
---
   set m0 := Multiset.map (fun y : ℕ => if hof y = x then (y / hof y) else 0) p1.parts
   set m1 := Multiset.map (fun y : ℕ => (y / hof y)) (Multiset.filter (fun y => hof y = x) p1.parts)
   have: m0.sum = m1.sum:= by
@@ -816,16 +703,13 @@ lemma binary_c_rw
     rw [h_split]
     simp[Multiset.sum_eq_zero]
   simp [this]
-
   simp [distincts] at hp
   have filter_nodup: (Multiset.filter (fun y => hof y = x) p1.parts).Nodup := by
     apply Multiset.Nodup.filter
     exact hp
-
   simp [m1]
   set S  : Multiset ℕ  :=  Multiset.map (fun x ↦ x / hof x)
     (Multiset.filter (fun y ↦ hof y = x) p1.parts)
-  -- set T := (Multiset.filter (fun y ↦ hof y = x) p1.parts) with hT
   have hS: S.Nodup := by
     have mem_Filter: ∀ {y : ℕ}, y ∈ (Multiset.filter (fun y ↦ hof y = x) p1.parts)
       → hof y = x :=by
@@ -860,9 +744,6 @@ lemma binary_c_rw
 
   let L : List ℕ := S.sort (· ≤ ·)
   have L_sorted_le : L.Sorted (· ≤ ·) := by simpa [L] using Multiset.sorted_sort (S := S) (r := (· ≤ ·))
---
---sort_nodup_of_nodup can be simplified as a lemma maybe it can't
---
   have LNodup : L.Nodup := (sort_nodup_of_nodup hS)
   have L_sorted_lt : L.Sorted (· < ·) := List.Sorted.lt_of_le L_sorted_le (sort_nodup_of_nodup hS)
   let idx : List ℕ := (L.map log2)

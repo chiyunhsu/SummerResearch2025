@@ -772,10 +772,11 @@ theorem FermatTriangle
   have even_rs_sum : Even (r + s) := Odd.add_odd odd_r odd_s
   have even_rs_diff : Even (r - s) := Nat.Odd.sub_odd odd_r odd_s
 
+  have div2_sum : 2 ∣ (r + s) := Even.two_dvd even_rs_sum
+  have div2_diff : 2 ∣ (r - s) := Even.two_dvd even_rs_diff
+
   -- one of r+s or r-s is divisible by 4
   have div4 : 4 ∣ (r + s) ∨ 4 ∣ (r - s) := by
-    have div2_sum : 2 ∣ (r + s) := Even.two_dvd even_rs_sum
-    have div2_diff : 2 ∣ (r - s) := Even.two_dvd even_rs_diff
 
     by_cases hdiff : 4 ∣ (r - s)
     · exact Or.inr hdiff
@@ -815,8 +816,9 @@ theorem FermatTriangle
         _ = (2 + 2) % 4 := by rw [diffmod4, smod4]
         _ = 0 := by norm_num
 
-  let u := (r + s) / 2
-  let v := (r - s) / 2
+  set u := (r + s) / 2 with hu
+  set v := (r - s) / 2 with hv
+
   -- u = (r+s)/2, v = (r-s)/2, one of which is even
   have div2 : 2 ∣ u ∨ 2 ∣ v := by
     rcases div4 with div_sum | div_diff
@@ -836,7 +838,19 @@ theorem FermatTriangle
   --     exact Nat.succ_pos (2 * k)
   --   exact Nat.lt_of_le_of_lt (Nat.sub_le r s) (lt_add_of_pos_right r spos)
 
-  have uv_sq : isSquare (u ^ 2 + v ^ 2) := by sorry
+  have uv_sq : isSquare (u ^ 2 + v ^ 2) := by
+    rw [hu, hv]
+    rw [Nat.div_pow div2_sum, Nat.div_pow div2_diff]
+    rw [← Nat.add_mul_div_left _ _ (by norm_num : 0 < 4), ← mul_comm]
+    norm_num
+    simp only [pow_two]
+    ring_nf
+    -- rw [Nat.mul_div_cancel_left _ (by norm_num : 0 < 2)]
+    -- rw [hr, hs]
+    -- ring
+    -- exact hsqp
+    sorry
+
   rcases uv_sq with ⟨w, uv_py⟩
 
   have uv_coprime : Nat.gcd u v = 1 := by sorry

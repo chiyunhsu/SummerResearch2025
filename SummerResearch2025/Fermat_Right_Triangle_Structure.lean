@@ -376,6 +376,12 @@ lemma Nat_sqs_sum {r s : ℕ} (hr : r > s) : (r + s) ^ 2 + (r - s) ^ 2 = 2 * r ^
   rw [add_comm]
 -/
 
+#check Nat.dvd_mul_left_of_dvd
+lemma or_div {a b c : ℕ} (h : a ∣ b ∨ a ∣ c) : a ∣ (b * c) := by
+  cases' h with h1 h2
+  sorry
+  sorry
+
 
 def ParamToTriple (gp : GoodParam) : PyTriple :=
 {
@@ -875,15 +881,78 @@ theorem FermatTriangle
     rw [← Nat.left_distrib, mul_comm]
     rw [hr, hs]
     rw [add_assoc]
-    rw [Nat.add_sub_of_le, ← two_mul, mul_comm, ← mul_assoc]
+    rw [Nat.add_sub_of_le (le_of_lt gp.pbig), ← two_mul, mul_comm, ← mul_assoc]
     norm_num
     exact hsqp
-    exact le_of_lt gp.pbig
 
   rcases uv_sq with ⟨w, uv_py⟩
 
+  /-
+  how to prove u and v are coprime?
+  p = u^2 + v^2
+  q = 2uv
+  -/
+
   have uv_coprime : Nat.gcd u v = 1 := by
     rw [hu, hv]
+    have hp : gp.p = u^2 + v^2 := by
+
+      have p_rs : 2 * gp.p = r^2 + s^2 := by
+        rw [hr, hs]
+        rw [add_add_tsub_cancel (le_of_lt gp.pbig), ← two_mul]
+
+      have double_sqs : r^2 + s^2 = 2 * (u^2 + v^2) := by
+        rw [← p_rs]
+        rw [hu, hv]
+        rw [Nat.div_pow div2_sum, Nat.div_pow div2_diff]
+        rw [← Nat.add_mul_div_left _ _ (by norm_num : 0 < 4)]
+        norm_num
+        rw [Nat.mul_div_cancel_left']
+        rw [Nat_sqs_sum rbig]
+        show 2 ^ 2 ∣ (r - s) ^ 2
+        rw [Nat.pow_dvd_pow_iff]
+        exact div2_diff
+        norm_num
+        rw [← Nat.left_distrib, mul_comm]
+        rw [hr, hs]
+        rw [add_assoc]
+        rw [Nat.add_sub_of_le (le_of_lt gp.pbig), ← two_mul, mul_comm, ← mul_assoc]
+        norm_num
+
+      have hp_double : 2 * gp.p = 2 * (u^2 + v^2) := by
+        rw [p_rs, double_sqs]
+
+      simp at hp_double
+      exact hp_double
+
+    have hq : gp.q = 2 * u * v := by
+
+      have q_rs : 2 * gp.q = r^2 - s^2 := by
+        rw [hr, hs]
+        rw [Nat.add_sub_sub_cancel (le_of_lt gp.pbig), ← two_mul]
+
+      have four_product : r^2 - s^2 = 4*u*v := by
+        rw [← q_rs]
+        rw [hu, hv]
+        rw [mul_assoc]
+        nth_rewrite 2 [mul_comm]
+        rw [← Nat.mul_div_mul_comm]
+        nth_rewrite 2 [mul_comm]
+        norm_num
+        rw [Nat.mul_div_cancel_left']
+        rw [← Nat.sq_sub_sq]
+        rw [← q_rs]
+        exact or_div div4
+        exact div2_sum
+        exact div2_diff
+
+      have hq_double : 2 * gp.q = 2 * (2 * u * v) := by
+        rw [q_rs, four_product]
+        ring_nf
+
+      simp at hq_double
+      exact hq_double
+
     sorry
 
   have uv_parity : Even u := by

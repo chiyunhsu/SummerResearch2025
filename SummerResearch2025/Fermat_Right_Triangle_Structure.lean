@@ -761,6 +761,7 @@ theorem FermatTriangle
     use k
 
   rcases Fermat_p_square P gp hgp sq_area with ⟨hsqp, hsqq, ⟨r, hr⟩, ⟨s, hs⟩⟩
+  rcases hsqq with ⟨q0, hq0⟩
 
   have odd_r2 : Odd (r^2) := by
     rw [hr]
@@ -844,6 +845,22 @@ theorem FermatTriangle
         _ = (2 + 2) % 4 := by rw [diffmod4, smod4]
         _ = 0 := by norm_num
 
+  have qdvdby2 : 2 ∣ gp.q := by
+    have : 4 ∣ (r + s) * (r - s) := or_div div4
+    rw [← Nat.sq_sub_sq] at this
+    simp [hr, hs] at this
+    rw [Nat.sub_add_comm (Nat.sub_le gp.p gp.q), Nat.sub_sub_self (le_of_lt gp.pbig), ← two_mul] at this
+    exact Nat.dvd_of_mul_dvd_mul_left (by norm_num : 0 < 2) this
+
+  have q0dvdby2 : 2 ∣ q0 := by
+    rw [← hq0] at qdvdby2
+    exact Nat.Prime.dvd_of_dvd_pow Nat.prime_two qdvdby2
+
+  have qdvdby4 : 4 ∣ gp.q := by
+    rw [← hq0]
+    rw [(by norm_num : 4 = 2 ^ 2), Nat.pow_dvd_pow_iff two_ne_zero]
+    exact q0dvdby2
+
   set u := (r + s) / 2 with hu
   set v := (r - s) / 2 with hv
 
@@ -856,6 +873,9 @@ theorem FermatTriangle
     · right
       apply Nat.dvd_div_of_mul_dvd
       exact div_diff
+
+  have even_u_or_v : Even u ∨ Even v :=
+    div2.elim (fun hu => Or.inl (even_iff_two_dvd.mpr hu)) (fun hv => Or.inr (even_iff_two_dvd.mpr hv))
 
   -- have u_big : v < u := by
   --   simp [u, v]
@@ -890,7 +910,12 @@ theorem FermatTriangle
     norm_num
     exact hsqp
 
-  rcases uv_sq with ⟨w, uv_py⟩
+  rcases uv_sq with ⟨w, uv_py'⟩
+
+  have uv_py : u ^ 2 + v ^ 2 = w ^ 2 := uv_py'.symm
+  have vu_py : v ^ 2 + u ^ 2 = w ^ 2 := by
+    rw [add_comm]
+    exact uv_py
 
   /-
   how to prove u and v are coprime?
@@ -956,33 +981,69 @@ theorem FermatTriangle
 
     sorry
 
-  have uv_parity : Even u := by
-    sorry
+  have vu_coprime : Nat.gcd v u = 1 := by
+    rw [Nat.gcd_comm]
+    exact uv_coprime
 
-  have uv_nonzero : 0 < u := by
-    sorry
 
-  let P' := PyTriple.mk u v w uv_parity uv_coprime uv_py.symm uv_nonzero
-  let m := Area P'
-  have hm : m = Area P' := rfl
+
+  have u_nonzero : 0 < u := by
+    rw [Nat.div_pos_iff]
+    constructor; exact Nat.two_pos
+    obtain ⟨r', hr'⟩ := odd_r
+    obtain ⟨s', hs'⟩ := odd_s
+    rw [hr', hs']
+    linarith
+
+  have v_nonzero : 0 < v := by
+    rw [Nat.div_pos_iff]
+    constructor; exact Nat.two_pos
+    obtain ⟨k, hk⟩ := even_rs_diff
+
+    by_cases k_zero : k = 0
+    · simp [k_zero] at hk
+      have diff_ne_zero : r - s ≠ 0 := by
+        rw [← Nat.pos_iff_ne_zero]
+        exact Nat.sub_pos_of_lt rbig
+      contradiction
+    · rw [← ne_eq, ← Nat.one_le_iff_ne_zero] at k_zero
+      rw [hk]
+      exact Nat.add_le_add k_zero k_zero
+
+  set m := u * v / 2 with hm
+
+  have m_area_PyTriple : ∃ (P' : PyTriple), m = Area P' := by
+    rcases even_u_or_v with u_even | v_even
+    · use PyTriple.mk u v w u_even uv_coprime uv_py u_nonzero
+      simp [Area, m, u, v]
+    · use PyTriple.mk v u w v_even vu_coprime vu_py v_nonzero
+      simp [Area, m, u, v]
+      rw [Nat.mul_comm]
 
   -- u^2 + v^2 = (r+s)^2/4 + (r-s)^2/4 = (2r^2 + 2s^2)/4 = (r^2 + s^2)/2 = p^2
   -- Area : uv/2 = (r+s)/2 * (r-s)/2 * 1/2 = (r^2 - s^2)/8 = ((p+q) - (p-q))/8 = 2q/8 = q/4
-  have area_eq : m = (gp.q) / 4 := by
-    simp [m, Area, P', u, v]
-    sorry
+  have m_eq_p_div_4 : m = (gp.q) / 4 := by
+    simp [hm, hu, hv]
+    rw [Nat.div_mul_div_comm (Even.two_dvd even_rs_sum) (Even.two_dvd even_rs_diff)]
+    rw [← Nat.sq_sub_sq, hr, hs]
+    rw [← (Nat.Simproc.add_sub_le _ (le_of_lt gp.pbig))]
+    ring_nf
+    rw [add_comm, Nat.add_sub_cancel]
+    rw [mul_comm, Nat.mul_div_assoc _ qdvdby4]
+    rw [mul_comm, Nat.mul_div_assoc _ (dvd_refl 2)]
+    norm_num
 
   have sq_m : isSquare m := by
-    rcases hsqq with ⟨q0, hq0⟩
-    rw [area_eq, ← hq0]
+    rw [m_eq_p_div_4, ← hq0]
     use q0 / 2
-    sorry
+    rw [pow_two]
+    rw [← Nat.mul_div_mul_comm q0dvdby2 q0dvdby2, ← pow_two]
 
   have m_small : m < n := by
     sorry
 
   have nonsq_m : ¬ isSquare m := by
-    simp [Fermat] at min_n
-    exact (min_n m_small P' hm)
+    unfold Fermat at min_n
+    exact min_n m_small m_area_PyTriple
 
   contradiction

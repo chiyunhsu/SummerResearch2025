@@ -378,10 +378,9 @@ lemma Nat_sqs_sum {r s : ℕ} (hr : r > s) : (r + s) ^ 2 + (r - s) ^ 2 = 2 * r ^
 
 #check Nat.dvd_mul_left_of_dvd
 lemma or_div {a b c : ℕ} (h : a ∣ b ∨ a ∣ c) : a ∣ (b * c) := by
-  cases' h with h1 h2
-  sorry
-  sorry
-
+  rcases h with h1 | h2
+  · exact Nat.dvd_mul_right_of_dvd h1 c
+  · exact Nat.dvd_mul_left_of_dvd h2 b
 
 def ParamToTriple (gp : GoodParam) : PyTriple :=
 {
@@ -867,17 +866,23 @@ theorem FermatTriangle
   --     exact Nat.succ_pos (2 * k)
   --   exact Nat.lt_of_le_of_lt (Nat.sub_le r s) (lt_add_of_pos_right r spos)
 
+  have four_dvd_diff_sq :  4 ∣ (r - s) ^ 2 := by
+    show 2 ^ 2 ∣ (r - s) ^ 2
+    rw [Nat.pow_dvd_pow_iff]
+    exact div2_diff
+    norm_num
+
   have uv_sq : isSquare (u ^ 2 + v ^ 2) := by
     rw [hu, hv]
     rw [Nat.div_pow div2_sum, Nat.div_pow div2_diff]
     rw [← Nat.add_mul_div_left _ _ (by norm_num : 0 < 4)]
     norm_num
-    rw [Nat.mul_div_cancel_left']
+    rw [Nat.mul_div_cancel_left' four_dvd_diff_sq]
     rw [Nat_sqs_sum rbig]
-    show 2 ^ 2 ∣ (r - s) ^ 2
-    rw [Nat.pow_dvd_pow_iff]
-    exact div2_diff
-    norm_num
+    have :  2 ^ 2 ∣ (r - s) ^ 2 := by
+      rw [Nat.pow_dvd_pow_iff]
+      exact div2_diff
+      norm_num
     rw [← Nat.left_distrib, mul_comm]
     rw [hr, hs]
     rw [add_assoc]
@@ -907,12 +912,8 @@ theorem FermatTriangle
         rw [Nat.div_pow div2_sum, Nat.div_pow div2_diff]
         rw [← Nat.add_mul_div_left _ _ (by norm_num : 0 < 4)]
         norm_num
-        rw [Nat.mul_div_cancel_left']
+        rw [Nat.mul_div_cancel_left' four_dvd_diff_sq]
         rw [Nat_sqs_sum rbig]
-        show 2 ^ 2 ∣ (r - s) ^ 2
-        rw [Nat.pow_dvd_pow_iff]
-        exact div2_diff
-        norm_num
         rw [← Nat.left_distrib, mul_comm]
         rw [hr, hs]
         rw [add_assoc]

@@ -985,8 +985,6 @@ theorem FermatTriangle
     rw [Nat.gcd_comm]
     exact uv_coprime
 
-
-
   have u_nonzero : 0 < u := by
     rw [Nat.div_pos_iff]
     constructor; exact Nat.two_pos
@@ -1040,7 +1038,27 @@ theorem FermatTriangle
     rw [← Nat.mul_div_mul_comm q0dvdby2 q0dvdby2, ← pow_two]
 
   have m_small : m < n := by
-    sorry
+    have pge1: 1 ≤ gp.p := by
+      rw [Nat.one_le_iff_ne_zero, ← Nat.pos_iff_ne_zero]
+      exact lt_trans gp.positive gp.pbig
+    have sum_ge1 : 1 ≤ gp.p + gp.q := by
+      exact Nat.add_le_add pge1 (Nat.zero_le gp.q)
+    have diff_ge1 : 1 ≤ gp.p - gp.q := by
+      rw [Nat.one_le_iff_ne_zero, ← Nat.pos_iff_ne_zero]
+      rw [tsub_pos_iff_lt]
+      exact gp.pbig
+    rw [hP, h_area, m_eq_p_div_4]
+    rw [Nat.div_lt_iff_lt_mul (by norm_num : 0 < 4)]
+    rw [mul_comm gp.p gp.q]
+    nth_rw 1 [← mul_one gp.q]; apply Nat.mul_lt_mul_of_le_of_lt _ (by norm_num : 1 < 4)
+    · rw [Nat.pos_iff_ne_zero]
+      apply Nat.mul_ne_zero _ (Nat.one_le_iff_ne_zero.mp diff_ge1)
+      apply Nat.mul_ne_zero _ (Nat.one_le_iff_ne_zero.mp sum_ge1)
+      exact Nat.mul_ne_zero (Nat.pos_iff_ne_zero.mp gp.positive) (Nat.one_le_iff_ne_zero.mp pge1)
+    · nth_rw 1 [← mul_one gp.q]; apply Nat.mul_le_mul _ diff_ge1
+      nth_rw 1 [← mul_one gp.q]; apply Nat.mul_le_mul _ sum_ge1
+      nth_rw 1 [← mul_one gp.q]; apply Nat.mul_le_mul _ pge1
+      exact le_rfl
 
   have nonsq_m : ¬ isSquare m := by
     unfold Fermat at min_n

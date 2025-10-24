@@ -228,3 +228,13 @@ lemma InDist {n : ℕ} (P : n.Partition) (P_odd : P ∈ (odds n)) : FromOdd P P_
 --will come back to the difference between fromdist to odd since its simple lemmas
 --which there is also not oo many differences
 --inOdd also similar length
+
+
+--10/24/2025
+-- 1) Agreed with using Prof. Hsu from dis definition since it shows proof strategy more clearly
+-- 2) fromdis map changed name of same_hof_ind to same_hof_bitIndices such that it
+-- matches with binary definition which uses bitIndices on Euler_Chiyun.lean
+-- 3) Will use fromdis0 as the core fromDis map.
+-- Will put the other fromdis_part, eq and counteq lemmas just before when they are used
+-- in rightInverse proofs for sake of readability for the whole file.
+-- 4) Hanzhe will try to do a first draft of the above on EULER_final.lean file for this week.

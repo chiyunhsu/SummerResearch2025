@@ -245,11 +245,12 @@ def Same_hof {n : ℕ} (Q : n.Partition) (b : ℕ) :
   Multiset ℕ := Multiset.filter (fun b' ↦ (hof b' = hof b)) Q.parts
 --  List ℕ := Finset.sort (· ≤ ·) (Same_hof_finset Q Q_dist b)
 
-def Same_hof_ind {n : ℕ} (Q : n.Partition) (b : ℕ) : Multiset ℕ :=
+def Same_hof_bitIndices {n : ℕ} (Q : n.Partition) (b : ℕ) : Multiset ℕ :=
   Multiset.map (fun b' ↦ b'.factorization 2) (Same_hof Q b)
 
-def Same_hof_ind_finset {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) : Finset ℕ :=
-  { val := Same_hof_ind Q b
+
+def Same_hof_bitIndices_finset {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) : Finset ℕ :=
+  { val := Same_hof_bitIndices Q b
     nodup := by
       apply Multiset.Nodup.map_on
       · intro x hx y hy heq
@@ -259,16 +260,16 @@ def Same_hof_ind_finset {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n)
       · apply Multiset.Nodup.filter
         simpa [distincts] using Q_dist }
 
-def Same_hof_ind_list {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
-  List ℕ := Finset.sort (· ≤ ·) (Same_hof_ind_finset Q Q_dist b)
+def Same_hof_bitIndices_list {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
+  List ℕ := Finset.sort (· ≤ ·) (Same_hof_bitIndices_finset Q Q_dist b)
 
 lemma aux {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
     Multiset.map (fun b' ↦ ordProj[2] b') (Same_hof Q b) =
-    List.map (fun i ↦ 2 ^ i) (Same_hof_ind_list Q Q_dist b) := by
-    --Multiset.map (fun i ↦ 2 ^ i) (Same_hof_ind Q b) := by
-  unfold Same_hof_ind_list
+    List.map (fun i ↦ 2 ^ i) (Same_hof_bitIndices_list Q Q_dist b) := by
+    --Multiset.map (fun i ↦ 2 ^ i) (Same_hof_bitIndices Q b) := by
+  unfold Same_hof_bitIndices_list
   rw [← Multiset.map_coe, Finset.sort_eq]
-  simp [Same_hof_ind_finset, Same_hof_ind]
+  simp [Same_hof_bitIndices_finset, Same_hof_bitIndices]
 
 -- Mapping a part `a` of a partition `P` to the multiset consisting of `the highest odd factor of a` with multiplicity ``the highest two pwer of a`
 
@@ -309,10 +310,10 @@ lemma eq {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
     exact hb'.2
 
 lemma this {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
-  (Multiset.count (hof b) (FromDistPart Q b)).bitIndices = Same_hof_ind_list Q Q_dist b := by
+  (Multiset.count (hof b) (FromDistPart Q b)).bitIndices = Same_hof_bitIndices_list Q Q_dist b := by
   simp [FromDistPart]
   rw [aux Q Q_dist b, Multiset.sum_coe]
-  have sort : List.Sorted (· < ·) (Same_hof_ind_list Q Q_dist b) := Finset.sort_sorted_lt _
+  have sort : List.Sorted (· < ·) (Same_hof_bitIndices_list Q Q_dist b) := Finset.sort_sorted_lt _
   exact bitIndices_twoPowsum sort
 
 lemma subset {n : ℕ} (Q : n.Partition) (b : ℕ) :
@@ -505,7 +506,7 @@ lemma RightInvPart {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b :
   rw [count_eq Q Q_dist b]
   rw [binary]
   rw [this Q Q_dist b]
-  simp only [Same_hof_ind_list, Same_hof_ind_finset, Same_hof_ind, Finset.sort_mk, ← Multiset.map_coe, Multiset.sort_eq]
+  simp only [Same_hof_bitIndices_list, Same_hof_bitIndices_finset, Same_hof_bitIndices, Finset.sort_mk, ← Multiset.map_coe, Multiset.sort_eq]
   nth_rewrite 2 [Multiset.map_map]
   rw [Multiset.map_map]
   have this :  ∀ b' ∈ Same_hof Q b, ((fun x => x * hof b) ∘ (fun i => 2 ^ i) ∘ (fun b'' => b''.factorization 2)) b'= (fun b'' => b'') b' := by

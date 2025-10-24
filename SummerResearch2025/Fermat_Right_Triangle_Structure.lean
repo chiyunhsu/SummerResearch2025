@@ -367,16 +367,6 @@ lemma Nat_sqs_sum {r s : ℕ} (hr : r > s) : (r + s) ^ 2 + (r - s) ^ 2 = 2 * r ^
   rw [add_comm, sub_eq_add_neg, add_sq, neg_sq, mul_neg, ← sub_eq_add_neg, add_sq, add_comm]
   ring_nf
 
-/-
-  rw [sq, Nat.cast_mul]
-  -- rewrite the subtraction as integer subtraction
-  rw [Nat.cast_sub hr.le]
-  -- now just expand in ℤ
-  ring_nf
-  rw [add_comm]
--/
-
-#check Nat.dvd_mul_left_of_dvd
 lemma or_div {a b c : ℕ} (h : a ∣ b ∨ a ∣ c) : a ∣ (b * c) := by
   rcases h with h1 | h2
   · exact Nat.dvd_mul_right_of_dvd h1 c
@@ -923,13 +913,12 @@ theorem FermatTriangle
   q = 2uv
   -/
 
-  have uv_coprime : Nat.gcd u v = 1 := by
-    rw [hu, hv]
-    have hp : gp.p = u^2 + v^2 := by
-
-      have p_rs : 2 * gp.p = r^2 + s^2 := by
+  have p_rs : 2 * gp.p = r^2 + s^2 := by
         rw [hr, hs]
         rw [add_add_tsub_cancel (le_of_lt gp.pbig), ← two_mul]
+
+  have uv_coprime : Nat.gcd u v = 1 := by
+    have hp : gp.p = u^2 + v^2 := by
 
       have double_sqs : r^2 + s^2 = 2 * (u^2 + v^2) := by
         rw [← p_rs]
@@ -979,7 +968,28 @@ theorem FermatTriangle
       simp at hq_double
       exact hq_double
 
-    sorry
+    set d1 := Nat.gcd u v with hd1
+
+    have divp : d1 ∣ gp.p := by
+      rw [hp]
+      have dvd_u2 : d1 ∣ u ^ 2 := dvd_pow (Nat.gcd_dvd_left u v) two_ne_zero
+      have dvd_v2 : d1 ∣ v ^ 2 := dvd_pow (Nat.gcd_dvd_right u v) two_ne_zero
+      exact Nat.dvd_add dvd_u2 dvd_v2
+
+    have divq : d1 ∣ gp.q := by
+      rw [hq]
+      rw [mul_comm]
+      have dvd_v : d1 ∣ v := Nat.gcd_dvd_right u v
+      exact Nat.dvd_mul_right_of_dvd dvd_v (2 * u)
+
+    have cop_pq : Nat.gcd gp.p gp.q = 1 := gp.coprime
+
+    have d1_div : d1 ∣ Nat.gcd gp.p gp.q := by
+      exact Nat.dvd_gcd divp divq
+
+    rw [cop_pq] at d1_div
+    rw [Nat.dvd_one] at d1_div
+    exact d1_div
 
   have vu_coprime : Nat.gcd v u = 1 := by
     rw [Nat.gcd_comm]

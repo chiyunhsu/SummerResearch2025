@@ -195,7 +195,7 @@ theorem sq_of_gcd_eq_one {a b c : ℕ} (h : Nat.gcd a b = 1) (heq : a * b = c ^ 
     exact isUnit_one
 
   obtain ⟨d, ⟨u, hu⟩⟩ := exists_associated_pow_of_mul_eq_pow h_unit heq
-  let : u = 1 := Nat.units_eq_one u
+  have : u = 1 := Nat.units_eq_one u
   let u_eq : (u : ℕ) = 1 := by rw [this, Units.val_one]
   use d
   rw [← hu, u_eq, mul_one]

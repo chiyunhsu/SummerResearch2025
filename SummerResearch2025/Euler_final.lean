@@ -463,17 +463,21 @@ lemma RightInvPart {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b :
   rw [Multiset.map_congr rfl this]
   simp
 
-lemma RightInvPart_others {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
-    ∀ a ∈ (FromDist Q Q_dist).parts.toFinset, a ∉ (FromDistPart Q b).toFinset → Multiset.count b (FromOddPart (FromDist Q Q_dist) a) = 0 := by
-  intro a ha a_not_hofb
+lemma RightInvPart' {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
+    ∀ a ∈ (FromDist Q Q_dist).parts.toFinset,
+      a ∉ (FromDistPart Q b).toFinset →
+      Multiset.count b (FromOddPart (FromDist Q Q_dist) a) = 0 := by
+  intro a ha a_not_in_hofb
+  -- Show a = hof b' for some b' in Q
   simp [Multiset.mem_toFinset] at ha
   have a_odd : Odd a := by
-    let lem := InOdd Q Q_dist
-    simp [odds] at lem
-    exact lem a ha
+    have FromDist_Q_odd : FromDist Q Q_dist ∈ odds n := InOdd Q Q_dist
+    simp [odds] at FromDist_Q_odd
+    exact FromDist_Q_odd a ha
   simp [FromDist, FromDist_parts] at ha
-  rcases ha with ⟨b', hb', ha⟩
+  rcases ha with ⟨b', b'_in_Q, ha⟩
   simp [FromDistPart0, Multiset.mem_replicate] at ha
+  -- Assume for the sake of contradiction that count b ≠ 0; then b = 2 ^ i * a for some i
   rw [Multiset.count_eq_zero]
   intro contra
   simp [FromOddPart] at contra
@@ -481,37 +485,36 @@ lemma RightInvPart_others {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts 
   simp [binary] at hx
   rcases hx with ⟨i, hi, hx⟩
   rw [← hx] at contra
-  have a_hofb : a = hof b := by
+
+  have a_eq_hofb : a = hof b := by
     rw [← contra, hof_two_pow_mul a i, hof_eq_of_odd a_odd]
-  simp only [FromDistPart, Multiset.toFinset_replicate] at a_not_hofb
-  by_cases h : (Multiset.map (fun b' => 2 ^ b'.factorization 2) (Same_hof Q b)).sum = 0
-  · simp [h] at a_not_hofb
-    rw [a_hofb] at ha
-    have : b' ∈ Same_hof Q b := by
-      simp [Same_hof]
-      exact ⟨hb', ha.symm⟩
-    let lem := Multiset.le_sum_of_mem (Multiset.mem_map_of_mem (fun b' => 2 ^ b'.factorization 2) this)
-    rw [h] at lem
-    apply Nat.eq_zero_of_le_zero at lem
-    let pos := ordProj_pos b' 2
-    rw [Nat.pos_iff_ne_zero] at pos
+  simp only [FromDistPart, Multiset.toFinset_replicate] at a_not_in_hofb
+  -- Prove by cases depending on `Same_hof Q b is empty or not`
+  by_cases h : (Multiset.map (fun b' => ordProj[2] b') (Same_hof Q b)).sum = 0
+  · simp [h] at a_not_in_hofb
+    rw [a_eq_hofb] at ha
+    have b'_in_Same_hof : b' ∈ Same_hof Q b := by simpa [Same_hof] using ⟨b'_in_Q, ha.symm⟩
+    have eq_zero : ordProj[2] b' = 0 := by
+      apply Nat.eq_zero_of_le_zero
+      rw [← h]
+      exact Multiset.le_sum_of_mem (Multiset.mem_map_of_mem (fun b' => ordProj[2] b') b'_in_Same_hof)
+    have ne_zero : ordProj[2] b' ≠ 0 := Nat.pos_iff_ne_zero.mp (ordProj_pos b' 2)
     contradiction
-  · simp [h] at a_not_hofb
+  · simp [h] at a_not_in_hofb
     contradiction
 
-/- Proof strategy:
+/- Proof strategy : For each b ∈ Q, count FromOdd (FromDist b) = count b.
 count b = count f g b
 f = ∑ a. Only a = hof b matters
 g = ∑ b'. Only b' with hof b' = hof b matters
 -/
 
 lemma RightInv {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) :
-  FromOdd (FromDist Q Q_dist) (InOdd Q Q_dist) = Q := by
+    FromOdd (FromDist Q Q_dist) (InOdd Q Q_dist) = Q := by
   ext b
   simp [FromOdd, FromOdd_parts]
   rw [← Finsetsum_eq_Bind]
   simp [Multiset.count_sum']
-  have Q_Nodup : Q.parts.Nodup := by simpa [distincts] using Q_dist
   have hsubset : (FromDistPart Q b) ⊆ (FromDist Q Q_dist).parts := by
     simp [FromDist]
     apply Multiset.subset_of_le
@@ -520,25 +523,25 @@ lemma RightInv {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) :
     apply Multiset.toFinset_subset.mpr
     rw [Same_hof]
     apply Multiset.filter_subset
-  rw [← Finset.sum_subset (Multiset.toFinset_subset.mpr hsubset) (RightInvPart_others Q Q_dist b)]
-  by_cases h : (Multiset.map (fun b' => 2 ^ b'.factorization 2) (Same_hof Q b)).sum = 0
+  rw [← Finset.sum_subset (Multiset.toFinset_subset.mpr hsubset) (RightInvPart' Q Q_dist b)]
+  -- Prove by cases depending on `Same_hof Q b is empty or not`
+  by_cases h : (Multiset.map (fun b' => ordProj[2] b') (Same_hof Q b)).sum = 0
   · simp [FromDistPart, h]
     rw [Multiset.count_eq_zero.mpr]
-    intro hb
-    have hb1 : b ∈ Same_hof Q b := by
-      simp [Same_hof]
-      exact hb
-    let lem := Multiset.le_sum_of_mem (Multiset.mem_map_of_mem (fun b' => 2 ^ b'.factorization 2) hb1)
-    rw [h] at lem
-    apply Nat.eq_zero_of_le_zero at lem
-    let pos := ordProj_pos b 2
-    rw [Nat.pos_iff_ne_zero] at pos
+    intro b_in_Q
+    have b_in_Same_hof : b ∈ Same_hof Q b := by simpa [Same_hof] using b_in_Q
+    have eq_zero : ordProj[2] b = 0 := by
+      apply Nat.eq_zero_of_le_zero
+      rw [← h]
+      exact Multiset.le_sum_of_mem (Multiset.mem_map_of_mem (fun b' => ordProj[2] b') b_in_Same_hof)
+    have ne_zero : ordProj[2] b ≠ 0 := Nat.pos_iff_ne_zero.mp (ordProj_pos b 2)
     contradiction
   · simp [FromDistPart, h]
     rw [RightInvPart Q Q_dist b]
     simp [Same_hof]
 
-theorem EulerIdentity (n : ℕ) : (odds n).card = (distincts n).card := Finset.card_bij' FromOdd FromDist InDist InOdd LeftInv RightInv
+theorem EulerIdentity (n : ℕ) : (odds n).card = (distincts n).card :=
+    Finset.card_bij' FromOdd FromDist InDist InOdd LeftInv RightInv
 
 --10/17/2025
 --will come back to the difference between fromdist to odd since its simple lemmas

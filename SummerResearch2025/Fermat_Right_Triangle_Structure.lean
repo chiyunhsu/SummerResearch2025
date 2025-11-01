@@ -2,9 +2,6 @@ import Mathlib
 
 variable (p q : ℕ)
 
-def isSquare (n : ℕ) : Prop :=
-  ∃ k : ℕ, k ^ 2 = n
-
 structure GoodParam where
   p : ℕ
   q : ℕ
@@ -235,12 +232,13 @@ lemma coprime_diff_sum (gp : GoodParam) : Nat.gcd (gp.p - gp.q) (gp.p + gp.q) = 
 
 lemma coprime_square_product {a b : ℕ}
     (hcoprime : Nat.gcd a b = 1)
-    (hsquare : isSquare (a * b)):
-    isSquare a ∧ isSquare b := by
+    (hsquare : IsSquare (a * b)):
+    IsSquare a ∧ IsSquare b := by
 
   obtain ⟨c, hc⟩ := hsquare
+  rw [← pow_two] at hc
 
-  have ha := sq_of_gcd_eq_one hcoprime hc.symm
+  have ha := sq_of_gcd_eq_one hcoprime hc
   have hb := sq_of_gcd_eq_one (Nat.gcd_comm b a ▸ hcoprime) (by rw [mul_comm, hc])
 
   obtain ⟨a0, ha0⟩ := ha
@@ -248,10 +246,9 @@ lemma coprime_square_product {a b : ℕ}
 
   constructor
   · use a0
-    exact ha0.symm
+    rwa [← pow_two]
   · use b0
-    exact hb0.symm
-
+    rwa [← pow_two]
 
 lemma coprime_linear_factors (gp : GoodParam) :
     (Nat.gcd gp.p gp.q = 1) ∧
@@ -408,11 +405,14 @@ theorem PyTripleToParam (P : PyTriple) : ∃ gp : GoodParam, P = ParamToTriple g
     simp at two_gcd
     exact two_gcd
 
-  have uv_square : isSquare u ∧ isSquare v := by
-    exact coprime_square_product gcd_uv_one ⟨k, huv.symm⟩
+  have uv_square : IsSquare u ∧ IsSquare v := by
+    rw [pow_two] at huv
+    exact coprime_square_product gcd_uv_one ⟨k, huv⟩
 
   obtain ⟨p', hp'⟩ := uv_square.1
   obtain ⟨q', hq'⟩ := uv_square.2
+  rw [← pow_two] at hp' hq'
+  symm at hp' hq'
 
   have pq_big : q' < p' := by
     have h1 : p'^2 = (P.z + P.y)/2 := by rw [hp', hu]
@@ -573,7 +573,7 @@ theorem PyTripleToParam (P : PyTriple) : ∃ gp : GoodParam, P = ParamToTriple g
   exact gp_y
   exact gp_z
 
-def Fermat (n : ℕ) : Prop := (∃ (P : PyTriple), n = Area P) → ¬ isSquare n
+def Fermat (n : ℕ) : Prop := (∃ (P : PyTriple), n = Area P) → ¬ IsSquare n
 noncomputable instance : DecidablePred Fermat := Classical.decPred _
 
 lemma Fermat_area_expand (gp : GoodParam) :
@@ -588,11 +588,11 @@ lemma Fermat_area_expand (gp : GoodParam) :
 
 
 lemma Fermat_p_square (P : PyTriple) (gp : GoodParam) (h : P = ParamToTriple gp)
-    (hArea : isSquare (Area P)) : isSquare gp.p ∧ isSquare gp.q ∧ isSquare (gp.p + gp.q) ∧ isSquare (gp.p - gp.q) := by
+    (hArea : IsSquare (Area P)) : IsSquare gp.p ∧ IsSquare gp.q ∧ IsSquare (gp.p + gp.q) ∧ IsSquare (gp.p - gp.q) := by
   rw [h] at hArea
   rw [Fermat_area_expand] at hArea
   rcases hArea with ⟨k, hk⟩
-  have hsq : isSquare (gp.p * gp.q * (gp.p + gp.q) * (gp.p - gp.q)) := by
+  have hsq : IsSquare (gp.p * gp.q * (gp.p + gp.q) * (gp.p - gp.q)) := by
     use k
   have hcoprime1 : Nat.gcd (gp.p - gp.q) (gp.p * gp.q * (gp.p + gp.q)) = 1 := by
     apply coprime_mul
@@ -606,7 +606,7 @@ lemma Fermat_p_square (P : PyTriple) (gp : GoodParam) (h : P = ParamToTriple gp)
     · -- gcd(p - q, p + q)
       apply coprime_diff_sum
 
-  have htotal_square : isSquare ((gp.p - gp.q) * (gp.p * gp.q * (gp.p + gp.q))) := by
+  have htotal_square : IsSquare ((gp.p - gp.q) * (gp.p * gp.q * (gp.p + gp.q))) := by
     rw [mul_comm]
     exact hsq
 
@@ -619,7 +619,7 @@ lemma Fermat_p_square (P : PyTriple) (gp : GoodParam) (h : P = ParamToTriple gp)
     rw [Nat.gcd_comm]
     apply coprime_q_sum
 
-  have htotal_square1 : isSquare ((gp.p + gp.q) * (gp.p * gp.q)) := by
+  have htotal_square1 : IsSquare ((gp.p + gp.q) * (gp.p * gp.q)) := by
     rw [mul_comm]
     exact hsq_rest1
 
@@ -631,7 +631,7 @@ lemma Fermat_p_square (P : PyTriple) (gp : GoodParam) (h : P = ParamToTriple gp)
 
 
 theorem FermatTriangle
---(P : PyTriple) : ¬ isSquare (Area P) := by
+--(P : PyTriple) : ¬ IsSquare (Area P) := by
 : ∀ (n : ℕ), Fermat n := by
   by_contra contra
   push_neg at contra
@@ -652,11 +652,13 @@ theorem FermatTriangle
     rw [hgp]             -- rewrite P as ParamToTriple gp
     exact Fermat_area_expand gp
 
-  have sq_area : isSquare (Area P) := by
+  have sq_area : IsSquare (Area P) := by
     use k
 
   rcases Fermat_p_square P gp hgp sq_area with ⟨hsqp, hsqq, ⟨r, hr⟩, ⟨s, hs⟩⟩
   rcases hsqq with ⟨q0, hq0⟩
+  rw [← pow_two] at hr hs hq0
+  symm at hr hs hq0
 
   have odd_r2 : Odd (r^2) := by
     rw [hr]
@@ -778,7 +780,7 @@ theorem FermatTriangle
     exact div2_diff
     norm_num
 
-  have uv_sq : isSquare (u ^ 2 + v ^ 2) := by
+  have uv_sq : IsSquare (u ^ 2 + v ^ 2) := by
     rw [hu, hv]
     rw [Nat.div_pow div2_sum, Nat.div_pow div2_diff]
     rw [← Nat.add_mul_div_left _ _ (by norm_num : 0 < 4)]
@@ -797,8 +799,9 @@ theorem FermatTriangle
     exact hsqp
 
   rcases uv_sq with ⟨w, uv_py'⟩
+  rw [← pow_two] at uv_py'
 
-  have uv_py : u ^ 2 + v ^ 2 = w ^ 2 := uv_py'.symm
+  have uv_py : u ^ 2 + v ^ 2 = w ^ 2 := uv_py'
   have vu_py : v ^ 2 + u ^ 2 = w ^ 2 := by
     rw [add_comm]
     exact uv_py
@@ -929,7 +932,7 @@ theorem FermatTriangle
     rw [mul_comm, Nat.mul_div_assoc _ (dvd_refl 2)]
     norm_num
 
-  have sq_m : isSquare m := by
+  have sq_m : IsSquare m := by
     rw [m_eq_p_div_4, ← hq0]
     use q0 / 2
     rw [pow_two]
@@ -958,7 +961,7 @@ theorem FermatTriangle
       nth_rw 1 [← mul_one gp.q]; apply Nat.mul_le_mul _ pge1
       exact le_rfl
 
-  have nonsq_m : ¬ isSquare m := by
+  have nonsq_m : ¬ IsSquare m := by
     unfold Fermat at min_n
     exact min_n m_small m_area_PyTriple
 

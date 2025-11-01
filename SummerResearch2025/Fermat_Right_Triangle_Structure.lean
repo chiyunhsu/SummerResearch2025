@@ -40,7 +40,7 @@ lemma rw_py (P : PyTriple) : P.x ^ 2 = P.z ^ 2 - P.y ^ 2 := by
   rw [← P.py, Nat.add_sub_cancel]
 
 
-theorem coprime_yz (P : PyTriple) : Nat.gcd P.y P.z = 1 := by
+lemma coprime_yz (P : PyTriple) : Nat.gcd P.y P.z = 1 := by
   by_contra h
 
   obtain ⟨p, hp_prime, p_dvd_y, p_dvd_z⟩ := Nat.Prime.not_coprime_iff_dvd.mp h
@@ -223,11 +223,11 @@ lemma coprime_diff_sum (gp : GoodParam) : Nat.gcd (gp.p - gp.q) (gp.p + gp.q) = 
 
   rw [← Nat.gcd_add_self_right (p - q) (p + q), add_comm, tsub_add_eq_add_tsub (Nat.le_of_lt gp.pbig), ← add_assoc p p q, add_tsub_cancel_right, ← two_mul]
 
-  let hcoprime_2 : Nat.gcd (p - q) 2 = 1 := by
+  have hcoprime_2 : Nat.gcd (p - q) 2 = 1 := by
     rw[odd_coprime_two]
     exact opp_parity_odd_diff gp
 
-  let hcoprime_p : Nat.gcd (p - q) p = 1 := by
+  have hcoprime_p : Nat.gcd (p - q) p = 1 := by
     rw [Nat.gcd_comm]
     exact coprime_p_diff gp
 
@@ -253,6 +253,22 @@ lemma coprime_square_product {a b : ℕ}
     exact hb0.symm
 
 
+lemma coprime_linear_factors (gp : GoodParam) :
+    (Nat.gcd gp.p gp.q = 1) ∧
+    (Nat.gcd gp.p (gp.p + gp.q) = 1) ∧
+    (Nat.gcd gp.p (gp.p - gp.q) = 1) ∧
+    (Nat.gcd gp.q (gp.p + gp.q) = 1) ∧
+    (Nat.gcd gp.q (gp.p - gp.q) = 1) ∧
+    (Nat.gcd (gp.p - gp.q) (gp.p + gp.q) = 1) := by
+
+  exact ⟨gp.coprime, coprime_p_sum gp, coprime_p_diff gp, coprime_q_sum gp, coprime_q_diff gp, coprime_diff_sum gp⟩
+
+
+lemma lt_sqs_param (gp : GoodParam) : gp.q ^ 2 ≤ gp.p ^ 2 := by
+  apply (Nat.pow_le_pow_iff_left (a := gp.q) (b := gp.p) (n := 2) (by decide)).mpr
+  exact Nat.le_of_lt gp.pbig
+
+
 lemma ParamParity (gp : GoodParam) : Even (2 * gp.p * gp.q) := by
   use gp.p * gp.q
   ring
@@ -262,38 +278,25 @@ lemma ParamCoprime (gp : GoodParam) : Nat.gcd (2 * gp.p * gp.q) (gp.p ^ 2 - gp.q
   let p := gp.p
   let q := gp.q
 
-  have hqsmall : q ^ 2 ≤ p ^ 2 := by
-    apply (Nat.pow_le_pow_iff_left (a := q) (b := p) (n := 2) (by decide)).mpr
-    exact Nat.le_of_lt gp.pbig
-
   have hodd : Odd (p ^ 2 - q ^ 2) := by
     rcases gp.parity with ⟨hp, hq⟩ | ⟨hp, hq⟩
     · -- Even p, Odd q
-      exact Nat.Even.sub_odd hqsmall (even_square hp) (odd_square hq)
+      exact Nat.Even.sub_odd (lt_sqs_param gp) (even_square hp) (odd_square hq)
     · -- Odd p, Even q
-      exact Nat.Odd.sub_even hqsmall (odd_square hp) (even_square hq)
+      exact Nat.Odd.sub_even (lt_sqs_param gp) (odd_square hp) (even_square hq)
 
   have gcd_p : Nat.gcd (p ^ 2 - q ^ 2) p = 1 := by
     rw [Nat.sq_sub_sq, Nat.gcd_comm]
-    apply coprime_mul
-    · exact coprime_p_sum gp
-    · exact coprime_p_diff gp
+    exact coprime_mul (coprime_p_sum gp) (coprime_p_diff gp)
 
   have gcd_q : Nat.gcd (p ^ 2 - q ^ 2) q = 1 := by
     rw [Nat.sq_sub_sq, Nat.gcd_comm]
-    apply coprime_mul
-    · exact coprime_q_sum gp
-    · exact coprime_q_diff gp
+    exact coprime_mul (coprime_q_sum gp) (coprime_q_diff gp)
 
   have gcd_2 : Nat.gcd (p ^ 2 - q ^ 2) 2 = 1 := odd_coprime_two hodd
 
   rw [Nat.gcd_comm]
-  apply coprime_mul
-  apply coprime_mul
-  exact gcd_2
-  exact gcd_p
-  exact gcd_q
-
+  exact coprime_mul (coprime_mul gcd_2 gcd_p) gcd_q
 
 lemma ParamPy (gp : GoodParam) : (2 * gp.p * gp.q) ^ 2 + (gp.p ^ 2 - gp.q ^ 2) ^ 2 = (gp.p ^ 2 + gp.q ^ 2) ^ 2 := by
   rw [Nat.sq_sub_sq]
@@ -583,6 +586,7 @@ lemma Fermat_area_expand (gp : GoodParam) :
   ring_nf
   norm_num
 
+
 lemma Fermat_p_square (P : PyTriple) (gp : GoodParam) (h : P = ParamToTriple gp)
     (hArea : isSquare (Area P)) : isSquare gp.p ∧ isSquare gp.q ∧ isSquare (gp.p + gp.q) ∧ isSquare (gp.p - gp.q) := by
   rw [h] at hArea
@@ -590,8 +594,7 @@ lemma Fermat_p_square (P : PyTriple) (gp : GoodParam) (h : P = ParamToTriple gp)
   rcases hArea with ⟨k, hk⟩
   have hsq : isSquare (gp.p * gp.q * (gp.p + gp.q) * (gp.p - gp.q)) := by
     use k
-  let rest1 := gp.p * gp.q * (gp.p + gp.q)
-  have hcoprime1 : Nat.gcd (gp.p - gp.q) rest1 = 1 := by
+  have hcoprime1 : Nat.gcd (gp.p - gp.q) (gp.p * gp.q * (gp.p + gp.q)) = 1 := by
     apply coprime_mul
     · apply coprime_mul
       · -- gcd(p - q, p)
@@ -603,31 +606,26 @@ lemma Fermat_p_square (P : PyTriple) (gp : GoodParam) (h : P = ParamToTriple gp)
     · -- gcd(p - q, p + q)
       apply coprime_diff_sum
 
-  have htotal_square : isSquare ((gp.p - gp.q) * rest1) := by
+  have htotal_square : isSquare ((gp.p - gp.q) * (gp.p * gp.q * (gp.p + gp.q))) := by
     rw [mul_comm]
     exact hsq
 
   have ⟨hsq_diff, hsq_rest1⟩ := coprime_square_product hcoprime1 htotal_square
 
-  let rest2 := gp.p * gp.q
-
-  have hcoprime2 : Nat.gcd (gp.p + gp.q) rest2 = 1 := by
+  have hcoprime2 : Nat.gcd (gp.p + gp.q) (gp.p * gp.q) = 1 := by
     apply coprime_mul
     rw [Nat.gcd_comm]
     apply coprime_p_sum
     rw [Nat.gcd_comm]
     apply coprime_q_sum
 
-  have htotal_square1 : isSquare ((gp.p + gp.q) * rest2) := by
+  have htotal_square1 : isSquare ((gp.p + gp.q) * (gp.p * gp.q)) := by
     rw [mul_comm]
     exact hsq_rest1
 
   have ⟨hsq_sum, hsq_rest2⟩ := coprime_square_product hcoprime2 htotal_square1
 
-  have hpq_square : isSquare (gp.p * gp.q) := by
-    exact hsq_rest2
-
-  have ⟨hsq_p, hsq_q⟩ := coprime_square_product gp.coprime hpq_square
+  have ⟨hsq_p, hsq_q⟩ := coprime_square_product gp.coprime hsq_rest2
 
   exact ⟨hsq_p, hsq_q, hsq_sum, hsq_diff⟩
 

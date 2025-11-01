@@ -6,7 +6,7 @@ structure GoodParam where
   p : ℕ
   q : ℕ
   pbig : q < p
-  coprime : Nat.gcd p q = 1
+  coprime : Nat.Coprime p q
   parity : (Even p ∧ Odd q) ∨ (Odd p ∧ Even q)
   positive : 0 < q
 
@@ -16,7 +16,7 @@ structure GoodParam where
   y : ℕ
   z : ℕ
   parity : Even x
-  coprime : Nat.gcd x y = 1
+  coprime : Nat.Coprime x y
   py : x^2 + y^2 = z^2
   nonzero : 0 < x
 
@@ -37,7 +37,7 @@ lemma rw_py (P : PyTriple) : P.x ^ 2 = P.z ^ 2 - P.y ^ 2 := by
   rw [← P.py, Nat.add_sub_cancel]
 
 
-lemma coprime_yz (P : PyTriple) : Nat.gcd P.y P.z = 1 := by
+lemma coprime_yz (P : PyTriple) : Nat.Coprime P.y P.z := by
   by_contra h
 
   obtain ⟨p, hp_prime, p_dvd_y, p_dvd_z⟩ := Nat.Prime.not_coprime_iff_dvd.mp h
@@ -141,7 +141,7 @@ lemma yz_2big (P : PyTriple) : 2 ≤ P.z - P.y := by
     exact h
 
 
-lemma odd_coprime_two {a : ℕ} (h : Odd a) : Nat.gcd a 2 = 1 := by
+lemma odd_coprime_two {a : ℕ} (h : Odd a) : Nat.Coprime a 2 := by
   let g : ℕ := Int.gcd a 2
 
   have div_two : g ∣ 2 := Int.gcd_dvd_natAbs_right a 2
@@ -174,17 +174,10 @@ lemma opp_parity_odd_diff (gp : GoodParam) : Odd (gp.p - gp.q) := by
   · -- Case: p odd, q even
     apply Nat.Odd.sub_even (le_of_lt gp.pbig) hp hq
 
-
-theorem coprime_mul {a b c : ℕ} (hab : Nat.gcd a b = 1) (hac : Nat.gcd a c = 1) : Nat.gcd a (b * c) = 1 := by
-  rw [Nat.Coprime.gcd_mul_right_cancel_right]
-  exact hab
-  exact Nat.Coprime.symmetric (Nat.coprime_iff_gcd_eq_one.mp hac)
-
-
 theorem coe_gcd (i j : ℕ) : (Nat.gcd i j) = GCDMonoid.gcd i j := rfl
 
 
-theorem sq_of_gcd_eq_one {a b c : ℕ} (h : Nat.gcd a b = 1) (heq : a * b = c ^ 2) :
+theorem sq_of_gcd_eq_one {a b c : ℕ} (h : Nat.Coprime a b) (heq : a * b = c ^ 2) :
     ∃ a0 : ℕ, a = a0 ^ 2 := by
 
   have h_unit : IsUnit (gcd a b) := by
@@ -197,41 +190,38 @@ theorem sq_of_gcd_eq_one {a b c : ℕ} (h : Nat.gcd a b = 1) (heq : a * b = c ^ 
   use d
   rw [← hu, u_eq, mul_one]
 
+lemma coprime_p_sum (gp : GoodParam) : Nat.Coprime gp.p (gp.p + gp.q) :=
+  Nat.coprime_self_add_right.mpr gp.coprime
 
-lemma coprime_p_sum (gp : GoodParam) : Nat.gcd gp.p (gp.p + gp.q) = 1 := by
-  rw [add_comm, Nat.gcd_add_self_right]
-  exact gp.coprime
+lemma coprime_p_diff (gp : GoodParam) : Nat.Coprime gp.p (gp.p - gp.q) :=
+  (Nat.coprime_self_sub_right (Nat.le_of_lt gp.pbig)).mpr gp.coprime
 
-lemma coprime_p_diff (gp : GoodParam) : Nat.gcd gp.p (gp.p - gp.q) = 1 := by
-  rw [Nat.gcd_comm, Nat.gcd_self_sub_left (Nat.le_of_lt gp.pbig), Nat.gcd_comm]
-  exact gp.coprime
+lemma coprime_q_sum (gp : GoodParam) : Nat.Coprime gp.q (gp.p + gp.q) := by
+  rw [Nat.coprime_comm]
+  exact Nat.coprime_add_self_left.mpr gp.coprime
 
-lemma coprime_q_sum (gp : GoodParam) : Nat.gcd gp.q (gp.p + gp.q) = 1 := by
-  rw [Nat.gcd_comm, Nat.gcd_add_self_left]
-  exact gp.coprime
+lemma coprime_q_diff (gp : GoodParam) : Nat.Coprime gp.q (gp.p - gp.q) := by
+  rw [Nat.coprime_comm]
+  exact (Nat.coprime_sub_self_left (Nat.le_of_lt gp.pbig)).mpr gp.coprime
 
-lemma coprime_q_diff (gp : GoodParam) : Nat.gcd gp.q (gp.p - gp.q) = 1 := by
-  rw [Nat.gcd_sub_self_right (Nat.le_of_lt gp.pbig), Nat.gcd_comm]
-  exact gp.coprime
-
-lemma coprime_diff_sum (gp : GoodParam) : Nat.gcd (gp.p - gp.q) (gp.p + gp.q) = 1 := by
+lemma coprime_diff_sum (gp : GoodParam) : Nat.Coprime (gp.p - gp.q) (gp.p + gp.q) := by
   let p := gp.p
   let q := gp.q
 
-  rw [← Nat.gcd_add_self_right (p - q) (p + q), add_comm, tsub_add_eq_add_tsub (Nat.le_of_lt gp.pbig), ← add_assoc p p q, add_tsub_cancel_right, ← two_mul]
+  rw [← Nat.coprime_add_self_right, add_comm, tsub_add_eq_add_tsub (Nat.le_of_lt gp.pbig), ← add_assoc p p q, add_tsub_cancel_right, ← two_mul]
 
-  have hcoprime_2 : Nat.gcd (p - q) 2 = 1 := by
-    rw[odd_coprime_two]
+  have hcoprime_2 : Nat.Coprime (p - q) 2 := by
+    apply odd_coprime_two
     exact opp_parity_odd_diff gp
 
-  have hcoprime_p : Nat.gcd (p - q) p = 1 := by
-    rw [Nat.gcd_comm]
+  have hcoprime_p : Nat.Coprime (p - q) p := by
+    rw [Nat.coprime_comm]
     exact coprime_p_diff gp
 
-  exact coprime_mul hcoprime_2 hcoprime_p
+  exact Nat.Coprime.mul_right hcoprime_2 hcoprime_p
 
 lemma coprime_square_product {a b : ℕ}
-    (hcoprime : Nat.gcd a b = 1)
+    (hcoprime : Nat.Coprime a b )
     (hsquare : IsSquare (a * b)):
     IsSquare a ∧ IsSquare b := by
 
@@ -239,7 +229,7 @@ lemma coprime_square_product {a b : ℕ}
   rw [← pow_two] at hc
 
   have ha := sq_of_gcd_eq_one hcoprime hc
-  have hb := sq_of_gcd_eq_one (Nat.gcd_comm b a ▸ hcoprime) (by rw [mul_comm, hc])
+  have hb := sq_of_gcd_eq_one (Nat.coprime_comm.mp hcoprime) (by rw [mul_comm, hc])
 
   obtain ⟨a0, ha0⟩ := ha
   obtain ⟨b0, hb0⟩ := hb
@@ -251,12 +241,12 @@ lemma coprime_square_product {a b : ℕ}
     rwa [← pow_two]
 
 lemma coprime_linear_factors (gp : GoodParam) :
-    (Nat.gcd gp.p gp.q = 1) ∧
-    (Nat.gcd gp.p (gp.p + gp.q) = 1) ∧
-    (Nat.gcd gp.p (gp.p - gp.q) = 1) ∧
-    (Nat.gcd gp.q (gp.p + gp.q) = 1) ∧
-    (Nat.gcd gp.q (gp.p - gp.q) = 1) ∧
-    (Nat.gcd (gp.p - gp.q) (gp.p + gp.q) = 1) := by
+    (Nat.Coprime gp.p gp.q) ∧
+    (Nat.Coprime gp.p (gp.p + gp.q)) ∧
+    (Nat.Coprime gp.p (gp.p - gp.q)) ∧
+    (Nat.Coprime gp.q (gp.p + gp.q)) ∧
+    (Nat.Coprime gp.q (gp.p - gp.q)) ∧
+    (Nat.Coprime (gp.p - gp.q) (gp.p + gp.q)) := by
 
   exact ⟨gp.coprime, coprime_p_sum gp, coprime_p_diff gp, coprime_q_sum gp, coprime_q_diff gp, coprime_diff_sum gp⟩
 
@@ -271,7 +261,7 @@ lemma ParamParity (gp : GoodParam) : Even (2 * gp.p * gp.q) := by
   ring
 
 
-lemma ParamCoprime (gp : GoodParam) : Nat.gcd (2 * gp.p * gp.q) (gp.p ^ 2 - gp.q ^ 2) = 1 := by
+lemma ParamCoprime (gp : GoodParam) : Nat.Coprime (2 * gp.p * gp.q) (gp.p ^ 2 - gp.q ^ 2) := by
   let p := gp.p
   let q := gp.q
 
@@ -282,18 +272,18 @@ lemma ParamCoprime (gp : GoodParam) : Nat.gcd (2 * gp.p * gp.q) (gp.p ^ 2 - gp.q
     · -- Odd p, Even q
       exact Nat.Odd.sub_even (lt_sqs_param gp) (odd_square hp) (even_square hq)
 
-  have gcd_p : Nat.gcd (p ^ 2 - q ^ 2) p = 1 := by
-    rw [Nat.sq_sub_sq, Nat.gcd_comm]
-    exact coprime_mul (coprime_p_sum gp) (coprime_p_diff gp)
+  have gcd_p : Nat.Coprime (p ^ 2 - q ^ 2) p := by
+    rw [Nat.sq_sub_sq, Nat.coprime_comm]
+    exact Nat.Coprime.mul_right (coprime_p_sum gp) (coprime_p_diff gp)
 
-  have gcd_q : Nat.gcd (p ^ 2 - q ^ 2) q = 1 := by
-    rw [Nat.sq_sub_sq, Nat.gcd_comm]
-    exact coprime_mul (coprime_q_sum gp) (coprime_q_diff gp)
+  have gcd_q : Nat.Coprime (p ^ 2 - q ^ 2) q := by
+    rw [Nat.sq_sub_sq, Nat.coprime_comm]
+    exact Nat.Coprime.mul_right (coprime_q_sum gp) (coprime_q_diff gp)
 
-  have gcd_2 : Nat.gcd (p ^ 2 - q ^ 2) 2 = 1 := odd_coprime_two hodd
+  have gcd_2 : Nat.Coprime (p ^ 2 - q ^ 2) 2 := odd_coprime_two hodd
 
-  rw [Nat.gcd_comm]
-  exact coprime_mul (coprime_mul gcd_2 gcd_p) gcd_q
+  rw [Nat.coprime_comm]
+  exact Nat.Coprime.mul_right (Nat.Coprime.mul_right gcd_2 gcd_p) gcd_q
 
 lemma ParamPy (gp : GoodParam) : (2 * gp.p * gp.q) ^ 2 + (gp.p ^ 2 - gp.q ^ 2) ^ 2 = (gp.p ^ 2 + gp.q ^ 2) ^ 2 := by
   rw [Nat.sq_sub_sq]
@@ -399,7 +389,7 @@ theorem PyTripleToParam (P : PyTriple) : ∃ gp : GoodParam, P = ParamToTriple g
   rw [mul_assoc] at huv
   rw [Nat.mul_right_inj four_ne_zero] at huv
 
-  have gcd_uv_one : Nat.gcd u v = 1 := by
+  have gcd_uv_one : Nat.Coprime u v := by
     rw [← hau, ← hbv] at two_gcd
     rw[Nat.gcd_mul_left] at two_gcd
     simp at two_gcd
@@ -441,9 +431,8 @@ theorem PyTripleToParam (P : PyTriple) : ∃ gp : GoodParam, P = ParamToTriple g
     apply (Nat.pow_lt_pow_iff_left two_ne_zero).mp
     exact sq_ineq
 
-  have pq_coprime : Nat.gcd p' q' = 1 := by
-    rw [← Int.gcd_natCast_natCast, Int.isCoprime_iff_gcd_eq_one.symm, Nat.isCoprime_iff_coprime]
-    have p2q2_coprime : (p' ^ 2).Coprime (q' ^ 2) := by
+  have pq_coprime : Nat.Coprime p' q' := by
+    have p2q2_coprime : Nat.Coprime (p' ^ 2) (q' ^ 2) := by
       rw [hp', hq']
       exact gcd_uv_one
     rw [← Nat.coprime_pow_left_iff zero_lt_two, ← Nat.coprime_pow_right_iff zero_lt_two]
@@ -594,14 +583,14 @@ lemma Fermat_p_square (P : PyTriple) (gp : GoodParam) (h : P = ParamToTriple gp)
   rcases hArea with ⟨k, hk⟩
   have hsq : IsSquare (gp.p * gp.q * (gp.p + gp.q) * (gp.p - gp.q)) := by
     use k
-  have hcoprime1 : Nat.gcd (gp.p - gp.q) (gp.p * gp.q * (gp.p + gp.q)) = 1 := by
-    apply coprime_mul
-    · apply coprime_mul
+  have hcoprime1 : Nat.Coprime (gp.p - gp.q) (gp.p * gp.q * (gp.p + gp.q)) := by
+    apply Nat.Coprime.mul_right
+    · apply Nat.Coprime.mul_right
       · -- gcd(p - q, p)
-        rw [Nat.gcd_comm]
+        rw [Nat.coprime_comm]
         apply coprime_p_diff
       · -- gcd(p - q, q)
-        rw [Nat.gcd_comm]
+        rw [Nat.coprime_comm]
         apply coprime_q_diff
     · -- gcd(p - q, p + q)
       apply coprime_diff_sum
@@ -612,11 +601,11 @@ lemma Fermat_p_square (P : PyTriple) (gp : GoodParam) (h : P = ParamToTriple gp)
 
   have ⟨hsq_diff, hsq_rest1⟩ := coprime_square_product hcoprime1 htotal_square
 
-  have hcoprime2 : Nat.gcd (gp.p + gp.q) (gp.p * gp.q) = 1 := by
-    apply coprime_mul
-    rw [Nat.gcd_comm]
+  have hcoprime2 : Nat.Coprime (gp.p + gp.q) (gp.p * gp.q) := by
+    apply Nat.Coprime.mul_right
+    rw [Nat.coprime_comm]
     apply coprime_p_sum
-    rw [Nat.gcd_comm]
+    rw [Nat.coprime_comm]
     apply coprime_q_sum
 
   have htotal_square1 : IsSquare ((gp.p + gp.q) * (gp.p * gp.q)) := by
@@ -810,7 +799,7 @@ theorem FermatTriangle
         rw [hr, hs]
         rw [add_add_tsub_cancel (le_of_lt gp.pbig), ← two_mul]
 
-  have uv_coprime : Nat.gcd u v = 1 := by
+  have uv_coprime : Nat.Coprime u v := by
     have hp : gp.p = u^2 + v^2 := by
 
       have double_sqs : r^2 + s^2 = 2 * (u^2 + v^2) := by
@@ -875,7 +864,7 @@ theorem FermatTriangle
       have dvd_v : d1 ∣ v := Nat.gcd_dvd_right u v
       exact Nat.dvd_mul_right_of_dvd dvd_v (2 * u)
 
-    have cop_pq : Nat.gcd gp.p gp.q = 1 := gp.coprime
+    have cop_pq : Nat.Coprime gp.p gp.q := gp.coprime
 
     have d1_div : d1 ∣ Nat.gcd gp.p gp.q := by
       exact Nat.dvd_gcd divp divq
@@ -884,8 +873,8 @@ theorem FermatTriangle
     rw [Nat.dvd_one] at d1_div
     exact d1_div
 
-  have vu_coprime : Nat.gcd v u = 1 := by
-    rw [Nat.gcd_comm]
+  have vu_coprime : Nat.Coprime v u := by
+    rw [Nat.coprime_comm]
     exact uv_coprime
 
   have u_nonzero : 0 < u := by

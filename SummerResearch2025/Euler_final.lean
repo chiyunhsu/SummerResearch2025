@@ -400,23 +400,24 @@ lemma subset {n : ℕ} (Q : n.Partition) (b : ℕ) :
 
 lemma count_eq {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
     Multiset.count (hof b) (FromDist_parts Q) = Multiset.count (hof b) (FromDistPart_same_hof Q b) := by
-    unfold FromDist_parts
-    rw [eq Q Q_dist]
-    repeat rw [Multiset.count_sum']
-    symm
-    apply Finset.sum_subset (Multiset.toFinset_subset.mpr (subset Q b))
-    intro b' hb' hb''
-    rw [Multiset.mem_toFinset] at *
-    unfold FromDistPart
-    rw [Multiset.count_replicate]
-    simp
-    simp [Same_hof] at hb''
-    exact hb'' hb'
+  unfold FromDist_parts
+  rw [eq Q Q_dist]
+  repeat rw [Multiset.count_sum']
+  symm
+  apply Finset.sum_subset (Multiset.toFinset_subset.mpr (subset Q b))
+  intro b' hb' hb''
+  rw [Multiset.mem_toFinset] at *
+  unfold FromDistPart
+  rw [Multiset.count_replicate]
+  simp
+  simp [Same_hof] at hb''
+  exact hb'' hb'
 
 def Same_hof_bitIndices {n : ℕ} (Q : n.Partition) (b : ℕ) : Multiset ℕ :=
   Multiset.map (fun b' ↦ b'.factorization 2) (Same_hof Q b)
 
-def Same_hof_bitIndices_finset {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) : Finset ℕ :=
+def Same_hof_bitIndices_finset {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
+    Finset ℕ :=
   { val := Same_hof_bitIndices Q b
     nodup := by
       apply Multiset.Nodup.map_on
@@ -438,8 +439,9 @@ lemma aux {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
   rw [← Multiset.map_coe, Finset.sort_eq]
   simp [Same_hof_bitIndices_finset, Same_hof_bitIndices]
 
-lemma this {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
-  (Multiset.count (hof b) (FromDistPart_same_hof Q b)).bitIndices = Same_hof_bitIndices_list Q Q_dist b := by
+lemma count_bitIndices_eq_ordProj {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
+    (Multiset.count (hof b) (FromDistPart_same_hof Q b)).bitIndices =
+    Same_hof_bitIndices_list Q Q_dist b := by
   simp [FromDistPart_same_hof]
   rw [aux Q Q_dist b, Multiset.sum_coe]
   have sort : List.Sorted (· < ·) (Same_hof_bitIndices_list Q Q_dist b) := Finset.sort_sorted_lt _
@@ -450,17 +452,21 @@ lemma RightInvPart {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b :
   simp [FromOddPart, FromDist]
   rw [count_eq Q Q_dist b]
   rw [binary]
-  rw [this Q Q_dist b]
-  simp only [Same_hof_bitIndices_list, Same_hof_bitIndices_finset, Same_hof_bitIndices, Finset.sort_mk, ← Multiset.map_coe, Multiset.sort_eq]
+  rw [count_bitIndices_eq_ordProj Q Q_dist b]
+  simp only [Same_hof_bitIndices_list, Same_hof_bitIndices_finset, Same_hof_bitIndices]
+  simp only [Finset.sort_mk, ← Multiset.map_coe, Multiset.sort_eq]
   nth_rewrite 2 [Multiset.map_map]
   rw [Multiset.map_map]
-  have this :  ∀ b' ∈ Same_hof Q b, ((fun x => x * hof b) ∘ (fun i => 2 ^ i) ∘ (fun b'' => b''.factorization 2)) b'= (fun b'' => b'') b' := by
+  have same_hof_eq_composedMap :
+      ∀ b' ∈ Same_hof Q b,
+        ((fun x => x * hof b) ∘ (fun i => 2 ^ i) ∘ (fun b'' => b''.factorization 2)) b' =
+        (fun b'' => b'') b' := by
     intro b' hb'
     simp [Same_hof] at hb'
     simp [hof] at *
     rw [← hb'.2]
     exact ordProj_mul_ordCompl_eq_self b' 2
-  rw [Multiset.map_congr rfl this]
+  rw [Multiset.map_congr rfl same_hof_eq_composedMap]
   simp
 
 lemma RightInvPart' {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
@@ -543,16 +549,14 @@ lemma RightInv {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) :
 theorem EulerIdentity (n : ℕ) : (odds n).card = (distincts n).card :=
     Finset.card_bij' FromOdd FromDist InDist InOdd LeftInv RightInv
 
---10/17/2025
---will come back to the difference between fromdist to odd since its simple lemmas
---which there is also not oo many differences
---inOdd also similar length
-
---10/24/2025
--- 1) Agreed with using Prof. Hsu from dis definition since it shows proof strategy more clearly
--- 2) fromdis map changed name of same_hof_ind to same_hof_bitIndices such that it
--- matches with binary definition which uses bitIndices on Euler_Chiyun.lean
--- 3) Will use fromdis0 as the core fromDis map.
--- Will put the other fromdis_part, eq and counteq lemmas just before when they are used
--- in rightInverse proofs for sake of readability for the whole file.
--- 4) Hanzhe will try to do a first draft of the above on EULER_final.lean file for this week.
+--11/7/2025
+-- Rename lemmas which are called lemmas, e.g. the eq's, aux, this.
+-- Add some comments to make the proof more understandable
+--    in the middle of lemmas add comments
+-- Find anyways to make the code slightly more readable,
+--    by combine shortlines and break up long lines
+-- Try to make consistent spacing and notation convention
+-- Read from bottom to top to check dependencies
+-- Change b' factorization 2 to  ordProj[2] b' where applicable
+--    look at errors after changing
+-- Hanzhe look at more general things

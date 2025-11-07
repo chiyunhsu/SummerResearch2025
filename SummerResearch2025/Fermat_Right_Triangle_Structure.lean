@@ -128,9 +128,13 @@ lemma zpos (P : PyTriple) : 0 < P.z := by
     norm_num at hzero
 
 
+lemma even_yz_sum (P : PyTriple) : Even (P.z + P.y) := Odd.add_odd (zodd P) (yodd P)
+
+lemma even_yz_diff (P : PyTriple) : Even (P.z - P.y) := Nat.Odd.sub_odd (zodd P) (yodd P)
+
 lemma yz_2big (P : PyTriple) : 2 ≤ P.z - P.y := by
   let hpos : 0 < P.z - P.y := Nat.sub_pos_of_lt (zbig P)
-  let heven : Even (P.z - P.y) := Nat.Odd.sub_odd (zodd P) (yodd P)
+  let heven : Even (P.z - P.y) := even_yz_diff P
   obtain ⟨k, hk⟩ := heven
   rw [hk] at hpos ⊢  -- rewrite P.z - P.y = 2 * k
   cases k with
@@ -240,16 +244,6 @@ lemma coprime_square_product {a b : ℕ}
   · use b0
     rwa [← pow_two]
 
-lemma coprime_linear_factors (gp : GoodParam) :
-    (Nat.Coprime gp.p gp.q) ∧
-    (Nat.Coprime gp.p (gp.p + gp.q)) ∧
-    (Nat.Coprime gp.p (gp.p - gp.q)) ∧
-    (Nat.Coprime gp.q (gp.p + gp.q)) ∧
-    (Nat.Coprime gp.q (gp.p - gp.q)) ∧
-    (Nat.Coprime (gp.p - gp.q) (gp.p + gp.q)) := by
-
-  exact ⟨gp.coprime, coprime_p_sum gp, coprime_p_diff gp, coprime_q_sum gp, coprime_q_diff gp, coprime_diff_sum gp⟩
-
 
 lemma lt_sqs_param (gp : GoodParam) : gp.q ^ 2 ≤ gp.p ^ 2 := by
   apply (Nat.pow_le_pow_iff_left (a := gp.q) (b := gp.p) (n := 2) (by decide)).mpr
@@ -300,7 +294,6 @@ lemma ParamNonzero (gp : GoodParam) : 0 < 2 * gp.p * gp.q := by
 lemma Nat_sqs_sum {r s : ℕ} (hr : r > s) : (r + s) ^ 2 + (r - s) ^ 2 = 2 * r ^ 2 + 2 * s ^ 2 := by
   apply Int.natCast_inj.mp
   simp [Int.natCast_sub (le_of_lt hr)]
-  rw [add_comm, sub_eq_add_neg, add_sq, neg_sq, mul_neg, ← sub_eq_add_neg, add_sq, add_comm]
   ring
 
 
@@ -326,6 +319,50 @@ def ParamToTriple (gp : GoodParam) : PyTriple :=
 }
 
 
+/-
+unpack P.parity using even x := 2k
+(2k)^2 + y^2 = z^2
+z^2 - y^2 = 4k^2
+Even a = z+y (lemma even_yz_sum defined at beginning)
+Even b = z-y (lemma even_yz_diff defined at beginning)
+gcd a b = 2
+u = a/2
+v = b/2
+u * v = k^2
+coprime u v
+u and v are both squares
+p' ^ 2 = u
+q' ^ 2 = v
+check all of the param requirements
+  q' < p'
+  coprime p' q'
+  pq parity (one even one odd)
+  0 < q'
+-/
+
+lemma py_yz_gcd (P : PyTriple) : Nat.gcd (P.z + P.y) (P.z - P.y) = 2 := by
+  set a := (P.z + P.y) with ha
+  set b := (P.z - P.y) with hb
+
+  let d : ℕ := Nat.gcd a b
+
+  let gcd_dvd_sum : d ∣ a + b := Nat.dvd_add (Nat.gcd_dvd_left a b) (Nat.gcd_dvd_right a b)
+  let gcd_dvd_diff : d ∣ a - b := Nat.dvd_sub (Nat.gcd_dvd_left a b) (Nat.gcd_dvd_right a b)
+
+  rw [ha, hb] at gcd_dvd_sum
+  nth_rewrite 2 [add_comm] at gcd_dvd_sum
+  rw [add_assoc, add_comm, add_assoc, add_comm, Nat.sub_add_cancel (le_of_lt (zbig P)), ← two_mul P.z] at gcd_dvd_sum
+
+  rw [ha, hb, sum_diff_double (zbig P)] at gcd_dvd_diff
+
+  let hdvd_gcd : d ∣ (Nat.gcd (2 * P.y) (2 * P.z)) := Nat.dvd_gcd gcd_dvd_diff gcd_dvd_sum
+  rw [Nat.gcd_mul_left] at hdvd_gcd
+  rw [coprime_yz P] at hdvd_gcd
+  simp at hdvd_gcd
+
+  exact Nat.dvd_antisymm hdvd_gcd (Nat.dvd_gcd (Even.two_dvd (even_yz_sum P)) (Even.two_dvd (even_yz_diff P)))
+
+
 theorem PyTripleToParam (P : PyTriple) : ∃ gp : GoodParam, P = ParamToTriple gp := by
   obtain ⟨k, hk⟩ := P.parity
   rw[← two_mul] at hk
@@ -334,38 +371,18 @@ theorem PyTripleToParam (P : PyTriple) : ∃ gp : GoodParam, P = ParamToTriple g
   rw [hk] at hpy
 
   have hsq_diff : (P.z + P.y) * (P.z - P.y) = 4 * k ^ 2 := by
-    rw [← Nat.sq_sub_sq, ← hpy, Nat.add_sub_cancel, pow_two, mul_assoc, mul_comm 2 k, mul_comm k, mul_comm k, mul_assoc, ← pow_two k, ← mul_assoc]
-    norm_num
+    rw [← Nat.sq_sub_sq, ← hpy, Nat.add_sub_cancel]
+    ring
 
-  let h_even_sum : Even (P.z + P.y) := Odd.add_odd (zodd P) (yodd P)
-  let h_even_diff : Even (P.z - P.y) := Nat.Odd.sub_odd (zodd P) (yodd P)
-
-  let hdiv2_sum : 2 ∣ (P.z + P.y) := Even.two_dvd h_even_sum
-  let hdiv2_diff : 2 ∣ (P.z - P.y) := Even.two_dvd h_even_diff
+  let hdiv2_sum : 2 ∣ (P.z + P.y) := Even.two_dvd (even_yz_sum P)
+  let hdiv2_diff : 2 ∣ (P.z - P.y) := Even.two_dvd (even_yz_diff P)
 
   set a := (P.z + P.y) with ha
   set b := (P.z - P.y) with hb
 
   let hab := hsq_diff
 
-  have two_gcd : Nat.gcd a b = 2 := by
-    let d : ℕ := Nat.gcd a b
-
-    let gcd_dvd_sum : d ∣ a + b := Nat.dvd_add (Nat.gcd_dvd_left a b) (Nat.gcd_dvd_right a b)
-    let gcd_dvd_diff : d ∣ a - b := Nat.dvd_sub (Nat.gcd_dvd_left a b) (Nat.gcd_dvd_right a b)
-
-    rw [ha, hb] at gcd_dvd_sum
-    nth_rewrite 2 [add_comm] at gcd_dvd_sum
-    rw [add_assoc, add_comm, add_assoc, add_comm, Nat.sub_add_cancel (le_of_lt (zbig P)), ← two_mul P.z] at gcd_dvd_sum
-
-    rw [ha, hb, sum_diff_double (zbig P)] at gcd_dvd_diff
-
-    let hdvd_gcd : d ∣ (Nat.gcd (2 * P.y) (2 * P.z)) := Nat.dvd_gcd gcd_dvd_diff gcd_dvd_sum
-    rw [Nat.gcd_mul_left] at hdvd_gcd
-    rw [coprime_yz P] at hdvd_gcd
-    simp at hdvd_gcd
-
-    exact Nat.dvd_antisymm hdvd_gcd (Nat.dvd_gcd hdiv2_sum hdiv2_diff)
+  have two_gcd : Nat.gcd a b = 2 := py_yz_gcd P
 
   set u := (P.z + P.y) / 2 with hu
   set v := (P.z - P.y) / 2 with hv

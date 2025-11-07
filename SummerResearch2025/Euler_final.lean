@@ -557,6 +557,5 @@ theorem EulerIdentity (n : ℕ) : (odds n).card = (distincts n).card :=
 --    by combine shortlines and break up long lines
 -- Try to make consistent spacing and notation convention
 -- Read from bottom to top to check dependencies
--- Change b' factorization 2 to  ordProj[2] b' where applicable
---    look at errors after changing
 -- Hanzhe look at more general things
+--

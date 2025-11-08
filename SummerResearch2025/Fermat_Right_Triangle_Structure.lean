@@ -589,10 +589,8 @@ lemma Fermat_area_expand (gp : GoodParam) :
   ring_nf
   norm_num
 
-lemma Fermat_p_square (gp : GoodParam)
---(P : PyTriple) (h : P = ParamToTriple gp)
-    (area_sq : IsSquare (Area (ParamToTriple gp))) : IsSquare gp.p ∧ IsSquare gp.q ∧ IsSquare (gp.p + gp.q) ∧ IsSquare (gp.p - gp.q) := by
-  --rw [h] at hArea
+lemma Fermat_p_square (gp : GoodParam) (area_sq : IsSquare (Area (ParamToTriple gp))) :
+    IsSquare gp.p ∧ IsSquare gp.q ∧ IsSquare (gp.p + gp.q) ∧ IsSquare (gp.p - gp.q) := by
   rw [Fermat_area_expand] at area_sq
   rcases area_sq with ⟨k, hk⟩
   have hsq : IsSquare (gp.p * gp.q * (gp.p + gp.q) * (gp.p - gp.q)) := by
@@ -631,6 +629,52 @@ lemma Fermat_p_square (gp : GoodParam)
   have ⟨hsq_p, hsq_q⟩ := coprime_square_product gp.coprime hsq_rest2
 
   exact ⟨hsq_p, hsq_q, hsq_sum, hsq_diff⟩
+
+-- one of r+s or r-s is divisible by 4
+  -- introduce lemma for this
+  lemma div4 {r s : ℕ} (hr : Odd r) (hs : Odd s) (rbig : r > s) : 4 ∣ (r + s) ∨ 4 ∣ (r - s) := by
+
+    have div2_sum : 2 ∣ (r + s) := Even.two_dvd (Odd.add_odd hr hs)
+    have div2_diff : 2 ∣ (r - s) := Even.two_dvd (Nat.Odd.sub_odd hr hs)
+
+    by_cases hdiff : 4 ∣ (r - s)
+    · exact Or.inr hdiff
+    · left
+      apply Nat.dvd_of_mod_eq_zero
+
+      have mod2 : (r - s) % 2 = 0 := Nat.mod_eq_zero_of_dvd div2_diff
+      have mod4 : (r - s) % 4 ≠ 0 := by
+        intro h
+        have := Nat.dvd_of_mod_eq_zero h
+        contradiction
+
+      have diffmod4 : (r - s) % 4 = 2 := by
+        have diff_even : Even (r - s) := Nat.Odd.sub_odd hr hs
+        rcases diff_even with ⟨k, hk⟩
+        rw [hk]
+        by_cases hk : Even k
+        · rcases hk with ⟨m, rfl⟩
+          omega
+        · rw [Nat.not_even_iff_odd] at hk
+          rcases hk with ⟨m, rfl⟩
+          calc
+          (2 * m + 1 + (2 * m + 1)) % 4 = (4 * m + 2) % 4 := by congr 1; ring
+          _ = 2 := by norm_num
+      have smod4 : 2 * s % 4 = 2 := by
+        rcases hs with ⟨k, rfl⟩
+        calc
+        (2 * (2 * k + 1)) % 4 = (4 * k + 2) % 4 := by congr 1; ring
+        _ = 2 := by norm_num
+      calc
+        (r + s) % 4
+          = ((r - s) + 2 * s) % 4 := by
+          congr 1
+          apply Int.natCast_inj.mp
+          simp[Int.natCast_sub (le_of_lt rbig)]
+          ring
+        _ = ((r - s) % 4 + (2 * s) % 4) % 4 := by rw [Nat.add_mod]
+        _ = (2 + 2) % 4 := by rw [diffmod4, smod4]
+        _ = 0 := by norm_num
 
 theorem FermatTriangle
 --(P : PyTriple) : ¬ IsSquare (Area P) := by
@@ -703,49 +747,9 @@ theorem FermatTriangle
   have div2_sum : 2 ∣ (r + s) := Even.two_dvd even_rs_sum
   have div2_diff : 2 ∣ (r - s) := Even.two_dvd even_rs_diff
 
-  -- one of r+s or r-s is divisible by 4
-  have div4 : 4 ∣ (r + s) ∨ 4 ∣ (r - s) := by
-
-    by_cases hdiff : 4 ∣ (r - s)
-    · exact Or.inr hdiff
-    · left
-      apply Nat.dvd_of_mod_eq_zero
-      have mod2 : (r - s) % 2 = 0 := Nat.mod_eq_zero_of_dvd div2_diff
-      have mod4 : (r - s) % 4 ≠ 0 := by
-        intro h
-        have := Nat.dvd_of_mod_eq_zero h
-        contradiction
-
-      have diffmod4 : (r - s) % 4 = 2 := by
-        have diff_even : Even (r - s) := Nat.Odd.sub_odd odd_r odd_s
-        rcases diff_even with ⟨k, hk⟩
-        rw [hk]
-        by_cases hk : Even k
-        · rcases hk with ⟨m, rfl⟩
-          omega
-        · rw [Nat.not_even_iff_odd] at hk
-          rcases hk with ⟨m, rfl⟩
-          calc
-          (2 * m + 1 + (2 * m + 1)) % 4 = (4 * m + 2) % 4 := by congr 1; ring
-          _ = 2 := by norm_num
-      have smod4 : 2 * s % 4 = 2 := by
-        rcases odd_s with ⟨k, rfl⟩
-        calc
-        (2 * (2 * k + 1)) % 4 = (4 * k + 2) % 4 := by congr 1; ring
-        _ = 2 := by norm_num
-      calc
-        (r + s) % 4
-          = ((r - s) + 2 * s) % 4 := by
-          congr 1
-          apply Int.natCast_inj.mp
-          simp[Int.natCast_sub (le_of_lt rbig)]
-          ring
-        _ = ((r - s) % 4 + (2 * s) % 4) % 4 := by rw [Nat.add_mod]
-        _ = (2 + 2) % 4 := by rw [diffmod4, smod4]
-        _ = 0 := by norm_num
 
   have qdvdby2 : 2 ∣ gp.q := by
-    have : 4 ∣ (r + s) * (r - s) := or_div div4
+    have : 4 ∣ (r + s) * (r - s) := or_div (div4 odd_r odd_s rbig)
     rw [← Nat.sq_sub_sq] at this
     simp [hr, hs] at this
     rw [Nat.sub_add_comm (Nat.sub_le gp.p gp.q), Nat.sub_sub_self (le_of_lt gp.pbig), ← two_mul] at this
@@ -765,7 +769,7 @@ theorem FermatTriangle
 
   -- u = (r+s)/2, v = (r-s)/2, one of which is even
   have div2 : 2 ∣ u ∨ 2 ∣ v := by
-    rcases div4 with div_sum | div_diff
+    rcases (div4 odd_r odd_s rbig) with div_sum | div_diff
     · left
       apply Nat.dvd_div_of_mul_dvd
       exact div_sum
@@ -852,7 +856,7 @@ theorem FermatTriangle
         rw [Nat.mul_div_cancel_left']
         rw [← Nat.sq_sub_sq]
         rw [← q_rs]
-        exact or_div div4
+        exact or_div (div4 odd_r odd_s rbig)
         exact div2_sum
         exact div2_diff
 

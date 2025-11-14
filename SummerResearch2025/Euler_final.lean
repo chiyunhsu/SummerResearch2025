@@ -559,3 +559,7 @@ theorem EulerIdentity (n : ℕ) : (odds n).card = (distincts n).card :=
 -- Read from bottom to top to check dependencies
 -- Hanzhe look at more general things
 --
+
+--11/14/2025
+--renamed eq aux lemmas
+-- look at count_eq for potential rename

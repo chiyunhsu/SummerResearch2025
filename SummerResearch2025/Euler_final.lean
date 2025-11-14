@@ -370,7 +370,7 @@ def FromDistPart_same_hof {n : ℕ} (Q : n.Partition) (b : ℕ) : Multiset ℕ :
 -- --Multiset.bind (Multiset.filter (fun b ↦ (hof b = a)) P.parts) (FromDistPart)
 --   Multiset.replicate (Multiset.map (fun b ↦ ordProj[2] b) (Same_hof Q a)).sum a
 
-lemma eq {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
+lemma FromDistPart_same_hof_eq_Finset_sum {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
   FromDistPart_same_hof Q b = ∑ b' ∈ (Same_hof Q b).toFinset, FromDistPart b' := by
   unfold FromDistPart_same_hof FromDistPart
   have : ∀ b' ∈ (Same_hof Q b).toFinset,
@@ -395,16 +395,16 @@ lemma eq {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
     rw [Multiset.mem_replicate] at hb'
     exact hb'.2
 
-lemma subset {n : ℕ} (Q : n.Partition) (b : ℕ) :
+lemma Same_hof_subset {n : ℕ} (Q : n.Partition) (b : ℕ) :
   Same_hof Q b ⊆ Q.parts := Multiset.filter_subset _ _
 
 lemma count_eq {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
     Multiset.count (hof b) (FromDist_parts Q) = Multiset.count (hof b) (FromDistPart_same_hof Q b) := by
   unfold FromDist_parts
-  rw [eq Q Q_dist]
+  rw [FromDistPart_same_hof_eq_Finset_sum Q Q_dist]
   repeat rw [Multiset.count_sum']
   symm
-  apply Finset.sum_subset (Multiset.toFinset_subset.mpr (subset Q b))
+  apply Finset.sum_subset (Multiset.toFinset_subset.mpr (Same_hof_subset Q b))
   intro b' hb' hb''
   rw [Multiset.mem_toFinset] at *
   unfold FromDistPart
@@ -524,7 +524,7 @@ lemma RightInv {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) :
   have hsubset : (FromDistPart_same_hof Q b) ⊆ (FromDist Q Q_dist).parts := by
     simp [FromDist]
     apply Multiset.subset_of_le
-    rw [eq Q Q_dist, FromDist_parts]
+    rw [FromDistPart_same_hof_eq_Finset_sum Q Q_dist, FromDist_parts]
     apply Finset.sum_le_sum_of_subset
     apply Multiset.toFinset_subset.mpr
     rw [Same_hof]

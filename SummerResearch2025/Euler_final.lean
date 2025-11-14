@@ -431,7 +431,7 @@ def Same_hof_bitIndices_finset {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ disti
 def Same_hof_bitIndices_list {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
   List ℕ := Finset.sort (· ≤ ·) (Same_hof_bitIndices_finset Q Q_dist b)
 
-lemma aux {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
+lemma Same_hof_ordProj_eq_twopow_bitIndices {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
     Multiset.map (fun b' ↦ ordProj[2] b') (Same_hof Q b) =
     List.map (fun i ↦ 2 ^ i) (Same_hof_bitIndices_list Q Q_dist b) := by
     --Multiset.map (fun i ↦ 2 ^ i) (Same_hof_bitIndices Q b) := by
@@ -439,11 +439,11 @@ lemma aux {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
   rw [← Multiset.map_coe, Finset.sort_eq]
   simp [Same_hof_bitIndices_finset, Same_hof_bitIndices]
 
-lemma count_bitIndices_eq_ordProj {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
+lemma same_hof_count_eq_bitIndices {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
     (Multiset.count (hof b) (FromDistPart_same_hof Q b)).bitIndices =
     Same_hof_bitIndices_list Q Q_dist b := by
   simp [FromDistPart_same_hof]
-  rw [aux Q Q_dist b, Multiset.sum_coe]
+  rw [Same_hof_ordProj_eq_twopow_bitIndices Q Q_dist b, Multiset.sum_coe]
   have sort : List.Sorted (· < ·) (Same_hof_bitIndices_list Q Q_dist b) := Finset.sort_sorted_lt _
   exact bitIndices_twoPowsum sort
 
@@ -452,7 +452,7 @@ lemma RightInvPart {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b :
   simp [FromOddPart, FromDist]
   rw [count_eq Q Q_dist b]
   rw [binary]
-  rw [count_bitIndices_eq_ordProj Q Q_dist b]
+  rw [same_hof_count_eq_bitIndices Q Q_dist b]
   simp only [Same_hof_bitIndices_list, Same_hof_bitIndices_finset, Same_hof_bitIndices]
   simp only [Finset.sort_mk, ← Multiset.map_coe, Multiset.sort_eq]
   nth_rewrite 2 [Multiset.map_map]
@@ -469,7 +469,7 @@ lemma RightInvPart {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b :
   rw [Multiset.map_congr rfl same_hof_eq_composedMap]
   simp
 
-lemma RightInvPart' {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
+lemma RightInvPart_diff_hof {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
     ∀ a ∈ (FromDist Q Q_dist).parts.toFinset,
       a ∉ (FromDistPart_same_hof Q b).toFinset →
       Multiset.count b (FromOddPart (FromDist Q Q_dist) a) = 0 := by
@@ -529,7 +529,7 @@ lemma RightInv {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) :
     apply Multiset.toFinset_subset.mpr
     rw [Same_hof]
     apply Multiset.filter_subset
-  rw [← Finset.sum_subset (Multiset.toFinset_subset.mpr hsubset) (RightInvPart' Q Q_dist b)]
+  rw [← Finset.sum_subset (Multiset.toFinset_subset.mpr hsubset) (RightInvPart_diff_hof Q Q_dist b)]
   -- Prove by cases depending on `Same_hof Q b is empty or not`
   by_cases h : (Multiset.map (fun b' => ordProj[2] b') (Same_hof Q b)).sum = 0
   · simp [FromDistPart_same_hof, h]

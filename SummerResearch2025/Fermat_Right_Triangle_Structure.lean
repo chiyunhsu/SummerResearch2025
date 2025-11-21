@@ -130,7 +130,9 @@ lemma zpos (P : PyTriple) : 0 < P.z := by
 
 lemma even_yz_sum (P : PyTriple) : Even (P.z + P.y) := Odd.add_odd (zodd P) (yodd P)
 
+
 lemma even_yz_diff (P : PyTriple) : Even (P.z - P.y) := Nat.Odd.sub_odd (zodd P) (yodd P)
+
 
 lemma yz_2big (P : PyTriple) : 2 ≤ P.z - P.y := by
   let hpos : 0 < P.z - P.y := Nat.sub_pos_of_lt (zbig P)
@@ -178,6 +180,7 @@ lemma opp_parity_odd_diff (gp : GoodParam) : Odd (gp.p - gp.q) := by
   · -- Case: p odd, q even
     apply Nat.Odd.sub_even (le_of_lt gp.pbig) hp hq
 
+
 theorem coe_gcd (i j : ℕ) : (Nat.gcd i j) = GCDMonoid.gcd i j := rfl
 
 
@@ -194,19 +197,24 @@ theorem sq_of_gcd_eq_one {a b c : ℕ} (h : Nat.Coprime a b) (heq : a * b = c ^ 
   use d
   rw [← hu, u_eq, mul_one]
 
+
 lemma coprime_p_sum (gp : GoodParam) : Nat.Coprime gp.p (gp.p + gp.q) :=
   Nat.coprime_self_add_right.mpr gp.coprime
 
+
 lemma coprime_p_diff (gp : GoodParam) : Nat.Coprime gp.p (gp.p - gp.q) :=
   (Nat.coprime_self_sub_right (Nat.le_of_lt gp.pbig)).mpr gp.coprime
+
 
 lemma coprime_q_sum (gp : GoodParam) : Nat.Coprime gp.q (gp.p + gp.q) := by
   rw [Nat.coprime_comm]
   exact Nat.coprime_add_self_left.mpr gp.coprime
 
+
 lemma coprime_q_diff (gp : GoodParam) : Nat.Coprime gp.q (gp.p - gp.q) := by
   rw [Nat.coprime_comm]
   exact (Nat.coprime_sub_self_left (Nat.le_of_lt gp.pbig)).mpr gp.coprime
+
 
 lemma coprime_diff_sum (gp : GoodParam) : Nat.Coprime (gp.p - gp.q) (gp.p + gp.q) := by
   let p := gp.p
@@ -223,6 +231,7 @@ lemma coprime_diff_sum (gp : GoodParam) : Nat.Coprime (gp.p - gp.q) (gp.p + gp.q
     exact coprime_p_diff gp
 
   exact Nat.Coprime.mul_right hcoprime_2 hcoprime_p
+
 
 lemma coprime_square_product {a b : ℕ}
     (hcoprime : Nat.Coprime a b )
@@ -278,6 +287,7 @@ lemma ParamCoprime (gp : GoodParam) : Nat.Coprime (2 * gp.p * gp.q) (gp.p ^ 2 - 
 
   rw [Nat.coprime_comm]
   exact Nat.Coprime.mul_right (Nat.Coprime.mul_right gcd_2 gcd_p) gcd_q
+
 
 lemma ParamPy (gp : GoodParam) : (2 * gp.p * gp.q) ^ 2 + (gp.p ^ 2 - gp.q ^ 2) ^ 2 = (gp.p ^ 2 + gp.q ^ 2) ^ 2 := by
   rw [Nat.sq_sub_sq]
@@ -374,6 +384,12 @@ lemma py_yz_gcd (P : PyTriple) : Nat.gcd (P.z + P.y) (P.z - P.y) = 2 := by
 
   exact Nat.dvd_antisymm hdvd_gcd (Nat.dvd_gcd (Even.two_dvd (even_yz_sum P)) (Even.two_dvd (even_yz_diff P)))
 
+lemma add_sub_inequality {a b : ℕ} (ha : 0 < a) (hb : 0 < b) : a - b < a + b := by
+  have add_sum_eq : a + b - b = a := by
+    simp
+  have partial_sum : a < a + b := Nat.lt_add_of_pos_right hb
+  exact lt_trans (Nat.sub_lt ha hb) partial_sum
+
 theorem PyTripleToParam (P : PyTriple) : ∃ gp : GoodParam, P = ParamToTriple gp := by
   obtain ⟨k, hk⟩ := P.parity
   rw[← two_mul] at hk
@@ -427,24 +443,13 @@ theorem PyTripleToParam (P : PyTriple) : ∃ gp : GoodParam, P = ParamToTriple g
 
   -- questions:
   -- how to do big, coprime, parity, positive outside of function?
-  --
+  -- if a > b, a/2 > b/2
 
   have pq_big : q' < p' := by
     have h1 : p'^2 = (P.z + P.y)/2 := by rw [hp', hu]
     have h2 : q'^2 = (P.z - P.y)/2 := by rw [hq', hv]
 
-    have abig : b < a := by
-      rw [ha, hb]
-      have add_sum_eq : P.z + P.y - P.y = P.z := by
-        simp
-      have partial_sum : P.z < P.z + P.y := by
-        nth_rewrite 1 [← add_sum_eq]
-        have sum_pos : 0 < P.z + P.y := by
-          rw [Nat.add_pos_iff_pos_or_pos]
-          left
-          exact zpos P
-        exact Nat.sub_lt (sum_pos) (ypos P)
-      exact lt_trans (Nat.sub_lt (zpos P) (ypos P)) partial_sum
+    have abig : b < a := add_sub_inequality (zpos P) (ypos P)
 
     rw [← ha] at h1
     rw [← hb] at h2
@@ -453,6 +458,7 @@ theorem PyTripleToParam (P : PyTriple) : ∃ gp : GoodParam, P = ParamToTriple g
       rw [h1, h2]
       apply (Nat.div_lt_div_right two_ne_zero hdiv2_diff hdiv2_sum).mpr
       exact abig
+
     apply (Nat.pow_lt_pow_iff_left two_ne_zero).mp
     exact sq_ineq
 
@@ -645,9 +651,7 @@ lemma Fermat_p_square (P : PyTriple) (gp : GoodParam) (h : P = ParamToTriple gp)
   have hsq : IsSquare (gp.p * gp.q * (gp.p + gp.q) * (gp.p - gp.q)) := by
     use k
 
-  have hcoprime1 := coprime_subtraction gp
-  have htotal_square := square_product_sub gp hsq
-  have ⟨hsq_diff, hsq_rest1⟩ := coprime_square_product hcoprime1 htotal_square
+  have ⟨hsq_diff, hsq_rest1⟩ := coprime_square_product (coprime_subtraction gp) (square_product_sub gp hsq)
   have hcoprime2 := coprime_addition gp
   have htotal_square1 := square_product_add gp hsq_rest1
   have ⟨hsq_sum, hsq_rest2⟩ := coprime_square_product hcoprime2 htotal_square1
@@ -796,8 +800,7 @@ theorem FermatTriangle
       apply Nat.dvd_div_of_mul_dvd
       exact div_diff
 
-  have even_u_or_v : Even u ∨ Even v :=
-    div2.elim (fun hu => Or.inl (even_iff_two_dvd.mpr hu)) (fun hv => Or.inr (even_iff_two_dvd.mpr hv))
+  have even_u_or_v : Even u ∨ Even v := div2.elim (fun hu => Or.inl (even_iff_two_dvd.mpr hu)) (fun hv => Or.inr (even_iff_two_dvd.mpr hv))
 
   have four_dvd_diff_sq :  4 ∣ (r - s) ^ 2 := by
     show 2 ^ 2 ∣ (r - s) ^ 2
@@ -806,20 +809,17 @@ theorem FermatTriangle
     norm_num
 
   have uv_sq : IsSquare (u ^ 2 + v ^ 2) := by
-    rw [hu, hv]
-    rw [Nat.div_pow div2_sum, Nat.div_pow div2_diff]
+    rw [hu, hv, Nat.div_pow div2_sum, Nat.div_pow div2_diff]
     rw [← Nat.add_mul_div_left _ _ (by norm_num : 0 < 4)]
     norm_num
-    rw [Nat.mul_div_cancel_left' four_dvd_diff_sq]
-    rw [Nat_sqs_sum rbig]
+    rw [Nat.mul_div_cancel_left' four_dvd_diff_sq, Nat_sqs_sum rbig]
+
     have :  2 ^ 2 ∣ (r - s) ^ 2 := by
       rw [Nat.pow_dvd_pow_iff]
       exact div2_diff
-      norm_num
-    rw [← Nat.left_distrib, mul_comm]
-    rw [hr, hs]
-    rw [add_assoc]
-    rw [Nat.add_sub_of_le (le_of_lt gp.pbig), ← two_mul, mul_comm, ← mul_assoc]
+      exact two_ne_zero
+
+    rw [← Nat.left_distrib, mul_comm, hr, hs, add_assoc, Nat.add_sub_of_le (le_of_lt gp.pbig), ← two_mul, mul_comm, ← mul_assoc]
     norm_num
     exact hsqp
 

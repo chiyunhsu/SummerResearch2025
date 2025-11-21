@@ -20,10 +20,12 @@ lemma ordCompl_PrimePow_eq_one {p k : ℕ} (hp : Nat.Prime p) : ordCompl[p] (p ^
   · exact one_ne_zero
   · simp [Nat.factorization_ordCompl, Nat.Prime.factorization_pow hp, Nat.factorization_one]
 
-lemma ordCompl_mul_PrimePow_eq_self (n k : ℕ) {p : ℕ} (hp : Nat.Prime p) : ordCompl[p] (p ^ k * n) = ordCompl[p] n := by
+lemma ordCompl_PrimePow_mul_eq_self (n k : ℕ) {p : ℕ} (hp : Nat.Prime p) :
+    ordCompl[p] (p ^ k * n) = ordCompl[p] n := by
   rw [ordCompl_mul, ordCompl_PrimePow_eq_one hp, one_mul]
 
-lemma not_dvd_of_ordComp_eq_self (n : ℕ) {p : ℕ} (hp : Nat.Prime p) : ordCompl[p] n = n ↔ n = 0 ∨ ¬p ∣ n := by
+lemma ordComp_eq_self_iff_zero_or_not_dvd (n : ℕ) {p : ℕ} (hp : Nat.Prime p) :
+    ordCompl[p] n = n ↔ n = 0 ∨ ¬p ∣ n := by
   constructor
   · intro h
     by_cases n_zero : n = 0
@@ -39,52 +41,51 @@ lemma not_dvd_of_ordComp_eq_self (n : ℕ) {p : ℕ} (hp : Nat.Prime p) : ordCom
 
 lemma hof_eq_iff_odd_or_zero (b : ℕ) : hof b = b ↔ (b = 0 ∨ Odd b) := by
   rw [← not_even_iff_odd, even_iff_two_dvd]
-  exact not_dvd_of_ordComp_eq_self b prime_two
+  exact ordComp_eq_self_iff_zero_or_not_dvd b prime_two
 
 lemma hof_is_odd {b : ℕ} (b_ne_zero : b ≠ 0) : Odd (hof b) := by
   rw [← not_even_iff_odd, even_iff_two_dvd]
   exact not_dvd_ordCompl prime_two b_ne_zero
 
-lemma hof_ne_zero_of_ne_zero {b : ℕ} (b_ne_zero : b ≠ 0) : hof b ≠ 0 := Nat.pos_iff_ne_zero.mp (ordCompl_pos 2 b_ne_zero)
+lemma hof_ne_zero_of_ne_zero {b : ℕ} (b_ne_zero : b ≠ 0) : hof b ≠ 0 :=
+  Nat.pos_iff_ne_zero.mp (ordCompl_pos 2 b_ne_zero)
 
-lemma hof_zero_iff_zero (b : ℕ) : b = 0 ↔ hof b = 0 := by
+lemma hof_zero_iff_zero (b : ℕ) : hof b = 0 ↔ b = 0 := by
   constructor
-  · intro b_eq_zero
-    simp [b_eq_zero, hof]
   · contrapose
     exact hof_ne_zero_of_ne_zero
+  · intro b_eq_zero
+    simp [b_eq_zero, hof]
 
 lemma hof_eq_of_odd {b : ℕ} (hodd : Odd b) : hof b = b := ((hof_eq_iff_odd_or_zero b).mpr (Or.inr hodd))
 
-lemma hof_two_pow_mul (b i : ℕ) : hof (2 ^ i * b) = hof (b) := ordCompl_mul_PrimePow_eq_self b i prime_two
+lemma hof_two_pow_mul (b i : ℕ) : hof (2 ^ i * b) = hof (b) := ordCompl_PrimePow_mul_eq_self b i prime_two
 
 lemma hof_dvd (b : ℕ) : hof b ∣ b := ordCompl_dvd b 2
 
-lemma hof_div_eq_two_pow {b : ℕ} (b_ne_zero : b ≠ 0) : ∃ k : ℕ, 2 ^ k = b / hof b := by
+lemma hof_div_eq_two_pow {b : ℕ} (b_ne_zero : b ≠ 0) : ∃ k : ℕ, b / hof b = 2 ^ k:= by
   use (b.factorization 2)
-  symm
   apply Nat.div_eq_of_eq_mul_right
   rw [Nat.pos_iff_ne_zero]
-  exact (mt (hof_zero_iff_zero b).mpr) b_ne_zero
+  exact (mt (hof_zero_iff_zero b).mp) b_ne_zero
   symm
   rw [mul_comm]
   exact (ordProj_mul_ordCompl_eq_self b 2)
 
-lemma hof_mul_two_pow_eq (b : ℕ) : ∃ (k : ℕ), 2 ^ k * hof b = b := by
+lemma hof_mul_two_pow_eq (b : ℕ) : ∃ (k : ℕ), hof b * 2 ^ k = b := by
   use (b.factorization 2)
+  rw [mul_comm]
   exact ordProj_mul_ordCompl_eq_self b 2
 
 lemma hof_le (b : ℕ) : hof b ≤ b := ordCompl_le b 2
 
-
---agreed on using finset sum for both right inverse and left inverse
---need to carefully rewrite the proof uing just finset sum later
--- Mapping a part `a` of a partition `P` to the multiset consisting of `a * 2 ^ i`, where `2 ^ i` is in the binary expansion of the multiplicity of `a`
+-- Mapping a part `a` of a partition `P` to the multiset consisting of `a * 2 ^ i`,
+-- where `2 ^ i` is in the binary expansion of the multiplicity of `a`
 def FromOddPart {n : ℕ} (P : n.Partition) (a : ℕ) : Multiset ℕ :=
   (binary (Multiset.count a P.parts)).map (fun x ↦ x * a)
 
-
-lemma FromOddPart_empty_of_notMem {n : ℕ} (P : n.Partition) (a : ℕ) : a ∉ P.parts → FromOddPart P a = 0 := by
+lemma FromOddPart_empty_of_notMem {n : ℕ} (P : n.Partition) (a : ℕ) :
+    a ∉ P.parts → FromOddPart P a = 0 := by
   intro ha
   unfold FromOddPart
   apply Multiset.count_eq_zero_of_notMem at ha
@@ -109,7 +110,8 @@ lemma FromOddPart_pos {n : ℕ} (P : n.Partition) (a : ℕ) {b : ℕ} :
   · rw [FromOddPart_empty_of_notMem P a ha] at hb
     contradiction
 
-lemma FromOddPart_sum {n : ℕ} (P : n.Partition) (a : ℕ) : (FromOddPart P a).sum = (Multiset.count a P.parts) * a := by
+lemma FromOddPart_sum {n : ℕ} (P : n.Partition) (a : ℕ) :
+    (FromOddPart P a).sum = (Multiset.count a P.parts) * a := by
   unfold FromOddPart
   rw [Multiset.sum_map_mul_right, Multiset.map_id']
   rw [binary_sum]
@@ -398,7 +400,7 @@ lemma FromDistPart_same_hof_eq_Finset_sum {n : ℕ} (Q : n.Partition) (Q_dist : 
 lemma Same_hof_subset {n : ℕ} (Q : n.Partition) (b : ℕ) :
   Same_hof Q b ⊆ Q.parts := Multiset.filter_subset _ _
 
-lemma count_eq {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
+lemma Count_FromDist_parts_eq_FromDistPart_same_hof {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
     Multiset.count (hof b) (FromDist_parts Q) = Multiset.count (hof b) (FromDistPart_same_hof Q b) := by
   unfold FromDist_parts
   rw [FromDistPart_same_hof_eq_Finset_sum Q Q_dist]
@@ -439,7 +441,7 @@ lemma Same_hof_ordProj_eq_twopow_bitIndices {n : ℕ} (Q : n.Partition) (Q_dist 
   rw [← Multiset.map_coe, Finset.sort_eq]
   simp [Same_hof_bitIndices_finset, Same_hof_bitIndices]
 
-lemma same_hof_count_eq_bitIndices {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
+lemma Same_hof_count_eq_bitIndices {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
     (Multiset.count (hof b) (FromDistPart_same_hof Q b)).bitIndices =
     Same_hof_bitIndices_list Q Q_dist b := by
   simp [FromDistPart_same_hof]
@@ -450,9 +452,9 @@ lemma same_hof_count_eq_bitIndices {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ d
 lemma RightInvPart {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
     (FromOddPart (FromDist Q Q_dist) (hof b)) = Same_hof Q b := by
   simp [FromOddPart, FromDist]
-  rw [count_eq Q Q_dist b]
+  rw [Count_FromDist_parts_eq_FromDistPart_same_hof Q Q_dist b]
   rw [binary]
-  rw [same_hof_count_eq_bitIndices Q Q_dist b]
+  rw [Same_hof_count_eq_bitIndices Q Q_dist b]
   simp only [Same_hof_bitIndices_list, Same_hof_bitIndices_finset, Same_hof_bitIndices]
   simp only [Finset.sort_mk, ← Multiset.map_coe, Multiset.sort_eq]
   nth_rewrite 2 [Multiset.map_map]
@@ -563,3 +565,9 @@ theorem EulerIdentity (n : ℕ) : (odds n).card = (distincts n).card :=
 --11/14/2025
 --renamed eq aux lemmas
 -- look at count_eq for potential rename
+
+--11/21/2025
+-- finished count_eq rename
+-- made lemmas name and statement consistent up until fromoddparts
+-- question: FromOddPart_pos we put comment on top of it, should we get rid of it since it's quite obvious?
+--    or should we add comments to more lemmas?

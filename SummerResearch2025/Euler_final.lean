@@ -91,7 +91,6 @@ lemma FromOddPart_empty_of_notMem {n : ℕ} (P : n.Partition) (a : ℕ) :
   apply Multiset.count_eq_zero_of_notMem at ha
   simp [ha, binary]
 
--- Each part in the multiset `FromOddPart` is positive
 lemma FromOddPart_pos {n : ℕ} (P : n.Partition) (a : ℕ) {b : ℕ} :
     b ∈ (FromOddPart P a) → b > 0 := by
   intro hb

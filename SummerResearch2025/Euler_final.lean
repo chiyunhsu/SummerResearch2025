@@ -1,6 +1,41 @@
+/-
+Copyright (c) 2025 Chi-Yun Hsu, Hanzhe Zhang, Tamanna Agarwal. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Chi-Yun Hsu, Hanzhe Zhang, Tamanna Agarwal
+-/
+
 import Mathlib
+
+/-!
+# Euler's Partition Theorem with Combinatorial Proof
+
+This files proves Euler's Partition Theorem using combinatorial constructions.
+
+Euler's Partition Theorem states that the number of integer partitions of `n` into `odd` parts
+equals the number of partitions of `n` into `distinct` parts.
+
+The combinatorial proof constructs explicit bijections between
+the set of partitions of `n` into odd parts and the set of partitions of `n` into distinct parts.
+
+Starting from an odd partition, we map each part `a` with multiplicity `m` to
+the multiset consisting of `a * 2 ^ i`, where `2 ^ i` is in the binary expansion of `m`.
+
+Conversely, starting from a distinct partition, we map each part `b` (with multiplicity 1) to
+the multiset consisting of `hof b`, the highest odd factor of `b`, with multiplicity `b / hof(b)`.
+
+## References
+
+* [G. E. Andrews, *Euler’s partition identity-finite version*][andrews2016]
+* <https://dspace.mit.edu/bitstream/handle/1721.1/123321/18-312-spring-2009/contents/readings-and-lecture-notes/MIT18_312S09_lec10_Patitio.pdf>
+
+## Tags
+
+integer partition, bijection
+-/
+
 open Nat Partition
--- The multiset of `2 ^ i` in the binary expansion of a natural number
+
+/-- The multiset of `2 ^ i` in the binary expansion of a natural number `a` -/
 def binary (a : ℕ) : Multiset ℕ := a.bitIndices.map (fun i ↦ 2 ^ i)
 
 lemma binary_nodup (a : ℕ) : (binary a).Nodup := by
@@ -10,7 +45,7 @@ lemma binary_nodup (a : ℕ) : (binary a).Nodup := by
 lemma binary_sum (a : ℕ) : (binary a).sum = a := by
   apply Nat.twoPowSum_bitIndices
 
--- Highest odd factor of a natural number
+/-- The highest odd factor of a natural number `b` -/
 def hof (b : ℕ) : ℕ := ordCompl[2] b
 
 lemma ordCompl_PrimePow_eq_one {p k : ℕ} (hp : Nat.Prime p) : ordCompl[p] (p ^ k) = 1 := by
@@ -79,8 +114,8 @@ lemma hof_mul_two_pow_eq (b : ℕ) : ∃ (k : ℕ), hof b * 2 ^ k = b := by
 
 lemma hof_le (b : ℕ) : hof b ≤ b := ordCompl_le b 2
 
--- Mapping a part `a` of a partition `P` to the multiset consisting of `a * 2 ^ i`,
--- where `2 ^ i` is in the binary expansion of the multiplicity of `a`
+/-- Given a part `a` of a partition `P`, construct the multiset consisting of `a * 2 ^ i`,
+where `2 ^ i` is in the binary expansion of the multiplicity of `a`. -/
 def FromOddPart {n : ℕ} (P : n.Partition) (a : ℕ) : Multiset ℕ :=
   (binary (Multiset.count a P.parts)).map (fun x ↦ x * a)
 
@@ -155,12 +190,13 @@ lemma FromOddPart_disjoint {n : ℕ} (P : n.Partition) (P_odd : P ∈ (odds n)) 
   rintro x hx y hy heqxy
   have heq : a = a' := by
     calc
-    a = hof x := (FromOddPart_hof P P_odd a x hx).symm
-    _ = hof y := by rw [heqxy]
-    _ = a' := FromOddPart_hof P P_odd a' y hy
+      a = hof x := (FromOddPart_hof P P_odd a x hx).symm
+      _ = hof y := by rw [heqxy]
+      _ = a' := FromOddPart_hof P P_odd a' y hy
   contradiction
 
--- Map from (odd) partitions to (distinct) partitions, only as a multiset : the union of `FromOddPart` of a part `a`
+/-- The multiset which is the union of `FromOddPart a` over distinct parts `a` of a partition `P`.
+This is the map from odd partitions to distinct partitions on the `Multiset` level. -/
 def FromOdd_parts {n : ℕ} (P : n.Partition) : Multiset ℕ :=
   Multiset.bind (P.parts.dedup) (FromOddPart P)
   --∑ a ∈ P.parts.toFinset, (FromOddPart P a)
@@ -191,7 +227,7 @@ lemma FromOdd_parts_sum {n : ℕ} (P : n.Partition) : (FromOdd_parts P).sum = n 
   to Multiset
   -/
 
--- Map from (odd) partitions to (distinct) partitions
+/-- The map from odd partitions to distinct partitions on the `Partition` level. -/
 def FromOdd {n : ℕ} (P : n.Partition) (_ : P ∈ odds n) : n.Partition :=
   { parts := FromOdd_parts P,
     parts_pos := FromOdd_parts_pos P,
@@ -225,6 +261,7 @@ lemma InDist {n : ℕ} (P : n.Partition) (P_odd : P ∈ (odds n)) : FromOdd P P_
     dsimp[Function.onFun]
     exact FromOddPart_disjoint P P_odd a a' hneq
 
+/-- The multiset consisting of `hof b` with multiplicity `b / hof(b)` of a natural number `b` -/
 def FromDistPart (b : ℕ) : Multiset ℕ :=
   Multiset.replicate (ordProj[2] b) (hof b)
 
@@ -244,6 +281,8 @@ lemma FromDistPart_sum (b : ℕ) : (FromDistPart b).sum = b := by
   simp [FromDistPart]
   exact ordProj_mul_ordCompl_eq_self b 2
 
+/-- The multiset which is the union of `FromDistPart b` over distinct parts `b` of a partition `Q`.
+This is the map from distinct partitions to odd partitions on the `Multiset` level. -/
 def FromDist_parts {n : ℕ} (Q : n.Partition) : Multiset ℕ :=
   -- Multiset.bind (Q.parts) (FromDistPart)
   -- ∑ b ∈ Q.parts.toFinset, (Multiset.count b Q.parts) • (FromDistPart_same_hof b)
@@ -268,6 +307,7 @@ lemma FromDist_parts_sum {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n
   rw [Multiset.dedup_eq_self.mpr Q_Nodup]
   exact Q.parts_sum
 
+/-- The map from distinct partitions to odd partitions on the `Partition` level. -/
 def FromDist {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) : n.Partition :=
   { parts := FromDist_parts Q
     parts_pos := FromDist_parts_pos Q
@@ -360,9 +400,12 @@ lemma LeftInv {n : ℕ} (P : n.Partition) (P_odd : P ∈ odds n) :
   exact LeftInvPart_same_hof P P_odd a
 
 -- Now we use FromDistPart_same_hof rather than FromDistPart to help with the right inverse proof
+/-- The sub multiset of a partition `Q` consisting of parts with the same `hof` value as `b`. -/
 def Same_hof {n : ℕ} (Q : n.Partition) (b : ℕ) :
   Multiset ℕ := Multiset.filter (fun b' ↦ (hof b' = hof b)) Q.parts
 
+/-- The multiset consisting of `hof b` with multiplicity equal to the sum of `b' / hof(b')`
+over all parts `b'` in `Q` with the same `hof` value as `b`. -/
 def FromDistPart_same_hof {n : ℕ} (Q : n.Partition) (b : ℕ) : Multiset ℕ :=
   Multiset.replicate (Multiset.map (fun b' ↦ ordProj[2] b') (Same_hof Q b)).sum (hof b)
   -- ∑ b' ∈ (Same_hof Q b).toFinset, FromDistPart b'
@@ -414,9 +457,12 @@ lemma Count_FromDist_parts_eq_FromDistPart_same_hof {n : ℕ} (Q : n.Partition) 
   simp [Same_hof] at hb''
   exact hb'' hb'
 
+/-- The multiset of exponents of 2 for parts in `Q` with the same `hof` value as `b`. -/
 def Same_hof_bitIndices {n : ℕ} (Q : n.Partition) (b : ℕ) : Multiset ℕ :=
   Multiset.map (fun b' ↦ b'.factorization 2) (Same_hof Q b)
 
+/-- The finite set of exponents of 2 for parts in `Q` with the same `hof` value as `b`.
+Non-duplication is implied by `Q` being a distinct partition. -/
 def Same_hof_bitIndices_finset {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
     Finset ℕ :=
   { val := Same_hof_bitIndices Q b
@@ -429,6 +475,7 @@ def Same_hof_bitIndices_finset {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ disti
       · apply Multiset.Nodup.filter
         simpa [distincts] using Q_dist }
 
+/-- The sorted list of exponents of 2 for parts in `Q` with the same `hof` value as `b`. -/
 def Same_hof_bitIndices_list {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
   List ℕ := Finset.sort (· ≤ ·) (Same_hof_bitIndices_finset Q Q_dist b)
 

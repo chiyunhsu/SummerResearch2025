@@ -69,38 +69,39 @@ lemma hof_eq_iff_odd_or_zero (a : ℕ) : hof a = a ↔ (a = 0 ∨ Odd a) := by
   exact ordCompl_eq_self_iff_zero_or_not_dvd a prime_two
 
 -- Lemmas that Hanzhe uses
-lemma hof_is_odd {x : ℕ} (x_ne_zero : x ≠ 0) : Odd (hof x) := by
+lemma hof_is_odd {b : ℕ} (b_ne_zero : b ≠ 0) : Odd (hof b) := by
   rw [← not_even_iff_odd, even_iff_two_dvd]
-  exact not_dvd_ordCompl prime_two x_ne_zero
+  exact not_dvd_ordCompl prime_two b_ne_zero
 
-lemma hof_ne_zero_of_ne_zero {n : ℕ} (n_ne_zero : n ≠ 0) : hof n ≠ 0 := Nat.pos_iff_ne_zero.mp (ordCompl_pos 2 n_ne_zero)
+lemma hof_ne_zero_of_ne_zero {b : ℕ} (b_ne_zero : b ≠ 0) : hof b ≠ 0 :=
+  Nat.pos_iff_ne_zero.mp (ordCompl_pos 2 b_ne_zero)
 
-lemma hof_zero_iff_zero (n : ℕ) : n = 0 ↔ hof n = 0 := by
+lemma hof_zero_iff_zero (b : ℕ) : hof b = 0 ↔ b = 0 := by
   constructor
-  · intro n_eq_zero
-    simp [n_eq_zero, hof]
   · contrapose
     exact hof_ne_zero_of_ne_zero
+  · intro b_eq_zero
+    simp [b_eq_zero, hof]
 
-lemma hof_eq_of_odd {n : ℕ} (hodd : Odd n) : hof n = n := ((hof_eq_iff_odd_or_zero n).mpr (Or.inr hodd))
+lemma hof_eq_of_odd {b : ℕ} (hodd : Odd b) : hof b = b := ((hof_eq_iff_odd_or_zero b).mpr (Or.inr hodd))
 
-lemma hof_two_pow_mul (x i : ℕ) : hof (2 ^ i * x) = hof (x) := ordCompl_PrimePow_mul_eq_self x i prime_two
+lemma hof_two_pow_mul (b i : ℕ) : hof (2 ^ i * b) = hof (b) := ordCompl_PrimePow_mul_eq_self b i prime_two
 
 lemma hof_dvd (b : ℕ) : hof b ∣ b := ordCompl_dvd b 2
 
-lemma hof_div_eq_two_pow {n : ℕ} (n_ne_zero : n ≠ 0) : ∃ k : ℕ, 2 ^ k = n / hof n := by
-  use (n.factorization 2)
-  symm
+lemma hof_div_eq_two_pow {b : ℕ} (b_ne_zero : b ≠ 0) : ∃ k : ℕ, b / hof b = 2 ^ k := by
+  use (b.factorization 2)
   apply Nat.div_eq_of_eq_mul_right
   rw [Nat.pos_iff_ne_zero]
-  exact (mt (hof_zero_iff_zero n).mpr) n_ne_zero
+  exact (mt (hof_zero_iff_zero b).mp) b_ne_zero
   symm
   rw [mul_comm]
-  exact (ordProj_mul_ordCompl_eq_self n 2)
+  exact (ordProj_mul_ordCompl_eq_self b 2)
 
-lemma hof_mul_two_pow_eq (n : ℕ) : ∃ (k : ℕ), 2 ^ k * hof n = n := by
-  use (n.factorization 2)
-  exact ordProj_mul_ordCompl_eq_self n 2
+lemma hof_mul_two_pow_eq (b : ℕ) : ∃ (k : ℕ), hof b * 2 ^ k = b := by
+  use (b.factorization 2)
+  rw [mul_comm]
+  exact ordProj_mul_ordCompl_eq_self b 2
 
 lemma hof_le (b : ℕ) : hof b ≤ b := ordCompl_le b 2
 
@@ -355,7 +356,7 @@ lemma FromDistPart_sum {n : ℕ} (Q : n.Partition) (b : ℕ) : (FromDistPart Q b
     rw [this]
     have : ∀ b' ∈ Q.parts, hof b' = 0 ↔ b' = 0 := by
       intro b' hb'
-      rw [← hof_zero_iff_zero]
+      rw [hof_zero_iff_zero]
     rw [Multiset.filter_congr this]
     have : (fun x ↦ x = 0) = Eq 0 := by
       ext x

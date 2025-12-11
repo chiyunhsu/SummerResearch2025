@@ -91,37 +91,13 @@ lemma hof_is_odd {b : ℕ} (b_ne_zero : b ≠ 0) : Odd (hof b) := by
   rw [← not_even_iff_odd, even_iff_two_dvd]
   exact not_dvd_ordCompl prime_two b_ne_zero
 
-lemma hof_ne_zero_of_ne_zero {b : ℕ} (b_ne_zero : b ≠ 0) : hof b ≠ 0 :=
-  Nat.pos_iff_ne_zero.mp (ordCompl_pos 2 b_ne_zero)
+lemma hof_eq_of_odd {b : ℕ} (hodd : Odd b) : hof b = b :=
+  ((hof_eq_iff_odd_or_zero b).mpr (Or.inr hodd))
 
-lemma hof_zero_iff_zero (b : ℕ) : hof b = 0 ↔ b = 0 := by
-  constructor
-  · contrapose
-    exact hof_ne_zero_of_ne_zero
-  · intro b_eq_zero
-    simp [b_eq_zero, hof]
-
-lemma hof_eq_of_odd {b : ℕ} (hodd : Odd b) : hof b = b := ((hof_eq_iff_odd_or_zero b).mpr (Or.inr hodd))
-
-lemma hof_two_pow_mul (b i : ℕ) : hof (2 ^ i * b) = hof (b) := ordCompl_PrimePow_mul_eq_self b i prime_two
+lemma hof_two_pow_mul (b i : ℕ) : hof (2 ^ i * b) = hof (b) :=
+  ordCompl_PrimePow_mul_eq_self b i prime_two
 
 lemma hof_dvd (b : ℕ) : hof b ∣ b := ordCompl_dvd b 2
-
-lemma hof_div_eq_two_pow {b : ℕ} (b_ne_zero : b ≠ 0) : ∃ k : ℕ, b / hof b = 2 ^ k:= by
-  use (b.factorization 2)
-  apply Nat.div_eq_of_eq_mul_right
-  rw [Nat.pos_iff_ne_zero]
-  exact (mt (hof_zero_iff_zero b).mp) b_ne_zero
-  symm
-  rw [mul_comm]
-  exact (ordProj_mul_ordCompl_eq_self b 2)
-
-lemma hof_mul_two_pow_eq (b : ℕ) : ∃ (k : ℕ), hof b * 2 ^ k = b := by
-  use (b.factorization 2)
-  rw [mul_comm]
-  exact ordProj_mul_ordCompl_eq_self b 2
-
-lemma hof_le (b : ℕ) : hof b ≤ b := ordCompl_le b 2
 
 /-- Given a part `a` of a partition `P`, construct the multiset consisting of `a * 2 ^ i`,
 where `2 ^ i` is in the binary expansion of the multiplicity of `a`. -/

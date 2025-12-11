@@ -83,9 +83,11 @@ lemma hof_zero_iff_zero (b : ℕ) : hof b = 0 ↔ b = 0 := by
   · intro b_eq_zero
     simp [b_eq_zero, hof]
 
-lemma hof_eq_of_odd {b : ℕ} (hodd : Odd b) : hof b = b := ((hof_eq_iff_odd_or_zero b).mpr (Or.inr hodd))
+lemma hof_eq_of_odd {b : ℕ} (hodd : Odd b) : hof b = b :=
+  ((hof_eq_iff_odd_or_zero b).mpr (Or.inr hodd))
 
-lemma hof_two_pow_mul (b i : ℕ) : hof (2 ^ i * b) = hof (b) := ordCompl_PrimePow_mul_eq_self b i prime_two
+lemma hof_two_pow_mul (b i : ℕ) : hof (2 ^ i * b) = hof (b) :=
+  ordCompl_PrimePow_mul_eq_self b i prime_two
 
 lemma hof_dvd (b : ℕ) : hof b ∣ b := ordCompl_dvd b 2
 

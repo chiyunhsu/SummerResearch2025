@@ -97,8 +97,6 @@ lemma hof_eq_of_odd {b : ℕ} (hodd : Odd b) : hof b = b :=
 lemma hof_two_pow_mul (b i : ℕ) : hof (2 ^ i * b) = hof (b) :=
   ordCompl_PrimePow_mul_eq_self b i prime_two
 
-lemma hof_dvd (b : ℕ) : hof b ∣ b := ordCompl_dvd b 2
-
 /-- Given a part `a` of a partition `P`, construct the multiset consisting of `a * 2 ^ i`,
 where `2 ^ i` is in the binary expansion of the multiplicity of `a`. -/
 def FromOddPart {n : ℕ} (P : n.Partition) (a : ℕ) : Multiset ℕ :=

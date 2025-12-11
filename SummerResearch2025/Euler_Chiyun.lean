@@ -22,7 +22,7 @@ lemma binary_nodup (a : ℕ) : (binary a).Nodup := by
   apply Multiset.coe_nodup.mpr
   exact List.Nodup.map (Nat.pow_right_injective (le_refl 2)) (List.Sorted.nodup (bitIndices_sorted))
   /- Suggest to add
-  theorem bitIndices_nodup {n : ℕ} : n.bitIndices.Nodup := (List.Sorted.nodup (bitIndices_sorted))
+  theorem bitIndices_nodup {n : ℕ} : n.bitIndices.Nodup := bitIndices_sorted.pairwise.nodup
   to Nat/BitIndices.lean
   -/
 
@@ -30,17 +30,26 @@ lemma binary_nodup (a : ℕ) : (binary a).Nodup := by
 def hof (b : ℕ) : ℕ := ordCompl[2] b
 
 -- Suggest to add
-lemma ordCompl_PrimePow_eq_one {p k : ℕ} (hp : Nat.Prime p) : ordCompl[p] (p ^ k) = 1 := by
+theorem ordProj_PrimePow_eq_self {p k : ℕ} (hp : Nat.Prime p) : ordProj[p] (p ^ k) = p ^ k := by
+  have pow_ne_zero : p ^ k ≠ 0 := pow_ne_zero k (Nat.Prime.ne_zero hp)
+  apply Nat.eq_of_factorization_eq
+  · exact pos_iff_ne_zero.mp (ordProj_pos (p ^ k) p)
+  · exact pow_ne_zero
+  · simp [Nat.Prime.factorization_pow hp]
+
+theorem ordCompl_PrimePow_eq_one {p k : ℕ} (hp : Nat.Prime p) : ordCompl[p] (p ^ k) = 1 := by
   have pow_ne_zero : p ^ k ≠ 0 := pow_ne_zero k (Nat.Prime.ne_zero hp)
   apply Nat.eq_of_factorization_eq
   · exact pos_iff_ne_zero.mp (ordCompl_pos p pow_ne_zero)
   · exact one_ne_zero
-  · simp [Nat.factorization_ordCompl, Nat.Prime.factorization_pow hp, Nat.factorization_one]
+  · simp [Nat.Prime.factorization_pow hp]
 
-lemma ordCompl_mul_PrimePow_eq_self (n k : ℕ) {p : ℕ} (hp : Nat.Prime p) : ordCompl[p] (p ^ k * n) = ordCompl[p] n := by
+theorem ordCompl_PrimePow_mul_eq_self (n k : ℕ) {p : ℕ} (hp : Nat.Prime p) :
+    ordCompl[p] (p ^ k * n) = ordCompl[p] n := by
   rw [ordCompl_mul, ordCompl_PrimePow_eq_one hp, one_mul]
 
-lemma not_dvd_of_ordComp_eq_self (n : ℕ) {p : ℕ} (hp : Nat.Prime p) : ordCompl[p] n = n ↔ n = 0 ∨ ¬p ∣ n := by
+theorem ordCompl_eq_self_iff_zero_or_not_dvd (n : ℕ) {p : ℕ} (hp : Nat.Prime p) :
+    ordCompl[p] n = n ↔ n = 0 ∨ ¬p ∣ n := by
   constructor
   · intro h
     by_cases n_zero : n = 0
@@ -57,7 +66,7 @@ lemma not_dvd_of_ordComp_eq_self (n : ℕ) {p : ℕ} (hp : Nat.Prime p) : ordCom
 
 lemma hof_eq_iff_odd_or_zero (a : ℕ) : hof a = a ↔ (a = 0 ∨ Odd a) := by
   rw [← not_even_iff_odd, even_iff_two_dvd]
-  exact not_dvd_of_ordComp_eq_self a prime_two
+  exact ordCompl_eq_self_iff_zero_or_not_dvd a prime_two
 
 -- Lemmas that Hanzhe uses
 lemma hof_is_odd {x : ℕ} (x_ne_zero : x ≠ 0) : Odd (hof x) := by
@@ -75,7 +84,7 @@ lemma hof_zero_iff_zero (n : ℕ) : n = 0 ↔ hof n = 0 := by
 
 lemma hof_eq_of_odd {n : ℕ} (hodd : Odd n) : hof n = n := ((hof_eq_iff_odd_or_zero n).mpr (Or.inr hodd))
 
-lemma hof_two_pow_mul (x i : ℕ) : hof (2 ^ i * x) = hof (x) := ordCompl_mul_PrimePow_eq_self x i prime_two
+lemma hof_two_pow_mul (x i : ℕ) : hof (2 ^ i * x) = hof (x) := ordCompl_PrimePow_mul_eq_self x i prime_two
 
 lemma hof_dvd (b : ℕ) : hof b ∣ b := ordCompl_dvd b 2
 
@@ -200,7 +209,7 @@ lemma FromOdd_parts_sum {n : ℕ} (P : n.Partition) : (FromOdd_parts P).sum = n 
   rw [Multiset.sum_bind]
   rw [(funext (FromOddPart_sum P))]
   simpa [P.parts_sum] using (Finset.sum_multiset_count P.parts).symm
-  /- Suggest to add
+  /- Suggest to add (Did not add)
   theorem Multiset.sum_multiset_count.{u_4} {M : Type u_4} [AddCommMonoid M] [DecidableEq M] (s : Multiset M) :
     s.sum = (Multiset.map (fun m => Multiset.count m s • m) s.dedup).sum := by
     simpa using (Finset.sum_multiset_count s)

@@ -48,18 +48,26 @@ lemma binary_sum (a : ℕ) : (binary a).sum = a := by
 /-- The highest odd factor of a natural number `b` -/
 def hof (b : ℕ) : ℕ := ordCompl[2] b
 
-lemma ordCompl_PrimePow_eq_one {p k : ℕ} (hp : Nat.Prime p) : ordCompl[p] (p ^ k) = 1 := by
+-- Suggest to add
+theorem ordProj_PrimePow_eq_self {p k : ℕ} (hp : Nat.Prime p) : ordProj[p] (p ^ k) = p ^ k := by
+  have pow_ne_zero : p ^ k ≠ 0 := pow_ne_zero k (Nat.Prime.ne_zero hp)
+  apply Nat.eq_of_factorization_eq
+  · exact pos_iff_ne_zero.mp (ordProj_pos (p ^ k) p)
+  · exact pow_ne_zero
+  · simp [Nat.Prime.factorization_pow hp]
+
+theorem ordCompl_PrimePow_eq_one {p k : ℕ} (hp : Nat.Prime p) : ordCompl[p] (p ^ k) = 1 := by
   have pow_ne_zero : p ^ k ≠ 0 := pow_ne_zero k (Nat.Prime.ne_zero hp)
   apply Nat.eq_of_factorization_eq
   · exact pos_iff_ne_zero.mp (ordCompl_pos p pow_ne_zero)
   · exact one_ne_zero
-  · simp [Nat.factorization_ordCompl, Nat.Prime.factorization_pow hp, Nat.factorization_one]
+  · simp [Nat.Prime.factorization_pow hp]
 
-lemma ordCompl_PrimePow_mul_eq_self (n k : ℕ) {p : ℕ} (hp : Nat.Prime p) :
+theorem ordCompl_PrimePow_mul_eq_self (n k : ℕ) {p : ℕ} (hp : Nat.Prime p) :
     ordCompl[p] (p ^ k * n) = ordCompl[p] n := by
   rw [ordCompl_mul, ordCompl_PrimePow_eq_one hp, one_mul]
 
-lemma ordComp_eq_self_iff_zero_or_not_dvd (n : ℕ) {p : ℕ} (hp : Nat.Prime p) :
+theorem ordCompl_eq_self_iff_zero_or_not_dvd (n : ℕ) {p : ℕ} (hp : Nat.Prime p) :
     ordCompl[p] n = n ↔ n = 0 ∨ ¬p ∣ n := by
   constructor
   · intro h
@@ -73,10 +81,11 @@ lemma ordComp_eq_self_iff_zero_or_not_dvd (n : ℕ) {p : ℕ} (hp : Nat.Prime p)
     · have : n.factorization p = 0 := Nat.factorization_eq_zero_of_not_dvd not_dvd
       rw [this]
       simp
+-- End of Suggest to Add
 
 lemma hof_eq_iff_odd_or_zero (b : ℕ) : hof b = b ↔ (b = 0 ∨ Odd b) := by
   rw [← not_even_iff_odd, even_iff_two_dvd]
-  exact ordComp_eq_self_iff_zero_or_not_dvd b prime_two
+  exact ordCompl_eq_self_iff_zero_or_not_dvd b prime_two
 
 lemma hof_is_odd {b : ℕ} (b_ne_zero : b ≠ 0) : Odd (hof b) := by
   rw [← not_even_iff_odd, even_iff_two_dvd]
@@ -220,12 +229,6 @@ lemma FromOdd_parts_sum {n : ℕ} (P : n.Partition) : (FromOdd_parts P).sum = n 
   rw [Multiset.sum_bind]
   rw [(funext (FromOddPart_sum P))]
   simpa [P.parts_sum] using (Finset.sum_multiset_count P.parts).symm
-  /- Suggest to add
-  theorem Multiset.sum_multiset_count.{u_4} {M : Type u_4} [AddCommMonoid M] [DecidableEq M] (s : Multiset M) :
-    s.sum = (Multiset.map (fun m => Multiset.count m s • m) s.dedup).sum := by
-    simpa using (Finset.sum_multiset_count s)
-  to Multiset
-  -/
 
 /-- The map from odd partitions to distinct partitions on the `Partition` level. -/
 def FromOdd {n : ℕ} (P : n.Partition) (_ : P ∈ odds n) : n.Partition :=

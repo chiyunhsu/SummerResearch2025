@@ -3,8 +3,10 @@ Copyright (c) 2025 Chi-Yun Hsu, Hanzhe Zhang, Tamanna Agarwal. All rights reserv
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chi-Yun Hsu, Hanzhe Zhang, Tamanna Agarwal
 -/
-
-import Mathlib
+import Mathlib.Data.Nat.BitIndices
+import Mathlib.Data.Nat.Factorization.Basic
+import Mathlib.Data.Finset.Pairwise
+import Mathlib.Combinatorics.Enumerative.Partition
 
 /-!
 # Euler's Partition Theorem with Combinatorial Proof
@@ -43,7 +45,7 @@ lemma binary_nodup (a : ℕ) : (binary a).Nodup := by
   exact List.Nodup.map (Nat.pow_right_injective (le_refl 2)) (List.Sorted.nodup (bitIndices_sorted))
 
 lemma binary_sum (a : ℕ) : (binary a).sum = a := by
-  apply Nat.twoPowSum_bitIndices
+  apply twoPowSum_bitIndices
 
 /-- The highest odd factor of a natural number `b` -/
 def hof (b : ℕ) : ℕ := ordCompl[2] b
@@ -51,14 +53,14 @@ def hof (b : ℕ) : ℕ := ordCompl[2] b
 -- Suggest to add
 theorem ordProj_PrimePow_eq_self {p k : ℕ} (hp : Nat.Prime p) : ordProj[p] (p ^ k) = p ^ k := by
   have pow_ne_zero : p ^ k ≠ 0 := pow_ne_zero k (Nat.Prime.ne_zero hp)
-  apply Nat.eq_of_factorization_eq
+  apply eq_of_factorization_eq
   · exact pos_iff_ne_zero.mp (ordProj_pos (p ^ k) p)
   · exact pow_ne_zero
   · simp [Nat.Prime.factorization_pow hp]
 
 theorem ordCompl_PrimePow_eq_one {p k : ℕ} (hp : Nat.Prime p) : ordCompl[p] (p ^ k) = 1 := by
   have pow_ne_zero : p ^ k ≠ 0 := pow_ne_zero k (Nat.Prime.ne_zero hp)
-  apply Nat.eq_of_factorization_eq
+  apply eq_of_factorization_eq
   · exact pos_iff_ne_zero.mp (ordCompl_pos p pow_ne_zero)
   · exact one_ne_zero
   · simp [Nat.Prime.factorization_pow hp]
@@ -78,7 +80,7 @@ theorem ordCompl_eq_self_iff_zero_or_not_dvd (n : ℕ) {p : ℕ} (hp : Nat.Prime
       exact not_dvd_ordCompl hp n_zero
   · rintro (n_eq_zero | not_dvd)
     · simp [n_eq_zero]
-    · have : n.factorization p = 0 := Nat.factorization_eq_zero_of_not_dvd not_dvd
+    · have : n.factorization p = 0 := factorization_eq_zero_of_not_dvd not_dvd
       rw [this]
       simp
 -- End of Suggest to Add
@@ -133,18 +135,18 @@ lemma FromOddPart_sum {n : ℕ} (P : n.Partition) (a : ℕ) :
   rw [Multiset.sum_map_mul_right, Multiset.map_id']
   rw [binary_sum]
 
-lemma FromOddPart_nodup {n : ℕ} (P : n.Partition) (a : ℕ):
+lemma FromOddPart_nodup {n : ℕ} (P : n.Partition) (a : ℕ) :
     (FromOddPart P a).Nodup := by
   by_cases ha : a ∈ P.parts
   · apply Multiset.Nodup.map
-    -- fun x => x * a is injective
+    /- fun x ↦ x * a is injective -/
     · rintro x1 x2 heq
       dsimp at heq
       have a_ne_zero : a ≠ 0 := by
         apply Nat.pos_iff_ne_zero.mp
         exact P.parts_pos ha
       exact (Nat.mul_left_inj a_ne_zero).mp heq
-    -- binary has no duplicates
+    /- binary has no duplicates -/
     · exact binary_nodup _
   · rw [FromOddPart_empty_of_notMem P a ha]
     exact Multiset.nodup_zero
@@ -155,8 +157,7 @@ lemma FromOddPart_hof {n : ℕ} (P : n.Partition) (P_odd : P ∈ (odds n)) (a : 
   by_cases ha : a ∈ P.parts
   · apply Multiset.mem_map.mp at hb
     rcases hb with ⟨x, hx, hb⟩
-    unfold binary at hx
-    simp at hx
+    simp [binary] at hx
     rcases hx with ⟨i, hi, hx⟩
     rw [← hb, ← hx, hof_two_pow_mul a i]
     apply (hof_eq_iff_odd_or_zero a).mpr
@@ -182,22 +183,20 @@ lemma FromOddPart_disjoint {n : ℕ} (P : n.Partition) (P_odd : P ∈ (odds n)) 
 This is the map from odd partitions to distinct partitions on the `Multiset` level. -/
 def FromOdd_parts {n : ℕ} (P : n.Partition) : Multiset ℕ :=
   Multiset.bind (P.parts.dedup) (FromOddPart P)
-  --∑ a ∈ P.parts.toFinset, (FromOddPart P a)
 
 lemma Finsetsum_eq_Bind {n : ℕ} (P : n.Partition) :
-  ∑ a ∈ P.parts.toFinset, (FromOddPart P a)
-  = Multiset.bind (P.parts.dedup) (FromOddPart P) := by rfl
+    ∑ a ∈ P.parts.toFinset, (FromOddPart P a) = Multiset.bind (P.parts.dedup) (FromOddPart P) := by
+  rfl
 
--- Each part in the multiset `FromOdd_parts` is positive
+/-- Each part in the multiset `FromOdd_parts` is positive. -/
 lemma FromOdd_parts_pos {n : ℕ} (P : n.Partition) {b : ℕ} : b ∈ (FromOdd_parts P) → b > 0 := by
   rintro hb
   unfold FromOdd_parts at hb
   apply Multiset.mem_bind.mp at hb
-  --apply Multiset.mem_sum.mp at hb
   rcases hb with ⟨a, ha, hb⟩
   exact FromOddPart_pos P a hb
 
--- The image of a partition of `n` under `FromOdd_parts` is still a partition of `n`
+/-- The image of a partition of `n` under `FromOdd_parts` is still a partition of `n`. -/
 lemma FromOdd_parts_sum {n : ℕ} (P : n.Partition) : (FromOdd_parts P).sum = n := by
   unfold FromOdd_parts
   rw [Multiset.sum_bind]
@@ -210,37 +209,38 @@ def FromOdd {n : ℕ} (P : n.Partition) (_ : P ∈ odds n) : n.Partition :=
     parts_pos := FromOdd_parts_pos P,
     parts_sum := FromOdd_parts_sum P }
 
-lemma InDist {n : ℕ} (P : n.Partition) (P_odd : P ∈ (odds n)) : FromOdd P P_odd ∈ (distincts n) := by
-  unfold distincts
-  simp
-  unfold FromOdd
-  simp
+/-- The image of an odd partition under `FromOdd` is a distinct partition. -/
+theorem InDist {n : ℕ} (P : n.Partition) (P_odd : P ∈ (odds n)) :
+    FromOdd P P_odd ∈ (distincts n) := by
+  simp [distincts, FromOdd]
   unfold FromOdd_parts
   apply Multiset.nodup_bind.mpr
   constructor
+  /- Each FromOddPart P a has no duplicates. -/
   · intro a _
     exact FromOddPart_nodup P a
+  /- Different FromOddPart P a are disjoint. -/
   · unfold Multiset.Pairwise
-    let PListPart := Multiset.sort (· ≤ ·) P.parts.dedup
-    have PListPart_nodup : PListPart.Nodup := by
+    let PPartList := Multiset.sort (· ≤ ·) P.parts.dedup
+    have PPartList_nodup : PPartList.Nodup := by
       apply Multiset.coe_nodup.mp
       rw [Multiset.sort_eq]
       apply Multiset.nodup_dedup
-    use PListPart
+    use PPartList
     constructor
-    rw [Multiset.sort_eq]
-    apply (List.pairwiseDisjoint_iff_coe_toFinset_pairwise_disjoint (f := FromOddPart P) PListPart_nodup).mp
-    rw [List.coe_toFinset]
-    intro a ha a' ha' hneq
-    simp only [Set.mem_setOf_eq] at ha ha'
-    unfold PListPart at ha ha'
-    rw [Multiset.mem_sort] at ha ha'
-    dsimp[Function.onFun]
-    exact FromOddPart_disjoint P P_odd a a' hneq
+    · rw [Multiset.sort_eq]
+    · apply (List.pairwiseDisjoint_iff_coe_toFinset_pairwise_disjoint
+        (f := FromOddPart P) PPartList_nodup).mp
+      rw [List.coe_toFinset]
+      intro a ha a' ha' hneq
+      simp only [Set.mem_setOf_eq] at ha ha'
+      unfold PPartList at ha ha'
+      rw [Multiset.mem_sort] at ha ha'
+      dsimp [Function.onFun]
+      exact FromOddPart_disjoint P P_odd a a' hneq
 
 /-- The multiset consisting of `hof b` with multiplicity `b / hof(b)` of a natural number `b` -/
-def FromDistPart (b : ℕ) : Multiset ℕ :=
-  Multiset.replicate (ordProj[2] b) (hof b)
+def FromDistPart (b : ℕ) : Multiset ℕ := Multiset.replicate (ordProj[2] b) (hof b)
 
 lemma FromDistPart_pos {n : ℕ} (Q : n.Partition) (b : ℕ) (hb : b ∈ Q.parts) {a : ℕ} :
     a ∈ (FromDistPart b) → a > 0 := by
@@ -261,10 +261,9 @@ lemma FromDistPart_sum (b : ℕ) : (FromDistPart b).sum = b := by
 /-- The multiset which is the union of `FromDistPart b` over distinct parts `b` of a partition `Q`.
 This is the map from distinct partitions to odd partitions on the `Multiset` level. -/
 def FromDist_parts {n : ℕ} (Q : n.Partition) : Multiset ℕ :=
-  -- Multiset.bind (Q.parts) (FromDistPart)
-  -- ∑ b ∈ Q.parts.toFinset, (Multiset.count b Q.parts) • (FromDistPart_same_hof b)
   ∑ b' ∈ Q.parts.toFinset, (FromDistPart b')
 
+/-- Each part in the multiset `FromDist_parts` is positive. -/
 lemma FromDist_parts_pos {n : ℕ} (Q : n.Partition) {a : ℕ} : a ∈ (FromDist_parts Q) → a > 0 := by
   rintro ha
   unfold FromDist_parts at ha
@@ -273,9 +272,10 @@ lemma FromDist_parts_pos {n : ℕ} (Q : n.Partition) {a : ℕ} : a ∈ (FromDist
   rw [Multiset.mem_toFinset] at hb
   exact FromDistPart_pos Q b hb ha
 
-lemma FromDist_parts_sum {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) : (FromDist_parts Q).sum = n := by
+/-- The image of a partition of `n` under `FromDist_parts` is still a partition of `n`. -/
+lemma FromDist_parts_sum {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) :
+    (FromDist_parts Q).sum = n := by
   unfold FromDist_parts
-  --rw [Multiset.sum_bind]
   rw [Multiset.sum_sum]
   rw [(funext FromDistPart_sum)]
   have : ∑ x ∈ Q.parts.toFinset, x = (Multiset.map (fun x ↦ x) (Q.parts.dedup)).sum := by rfl
@@ -290,25 +290,20 @@ def FromDist {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) : n.Partit
     parts_pos := FromDist_parts_pos Q
     parts_sum := FromDist_parts_sum Q Q_dist }
 
-lemma InOdd {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) : FromDist Q Q_dist ∈ odds n := by
-  unfold odds
-  simp
+/-- The image of a distinct partition under `FromDist` is an odd partition. -/
+theorem InOdd {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) :
+    FromDist Q Q_dist ∈ odds n := by
+  simp [odds]
   intro a ha
-  unfold FromDist at ha
-  simp at ha
-  unfold FromDist_parts at ha
-  simp at ha
+  simp [FromDist, FromDist_parts] at ha
   rcases ha with ⟨b, hb, ha⟩
   unfold FromDistPart at ha
   apply Multiset.mem_replicate.mp at ha
   rw [ha.2]
-  have b_ne_zero : b ≠ 0 := by
-    apply Nat.pos_iff_ne_zero.mp
-    apply Q.parts_pos
-    apply hb
+  have b_ne_zero : b ≠ 0 := Nat.pos_iff_ne_zero.mp (Q.parts_pos hb)
   exact hof_is_odd b_ne_zero
 
-lemma LeftInvPart_same_hof {n : ℕ} (P : n.Partition) (P_odd : P ∈ odds n) (a : ℕ) :
+lemma LeftInvPart_SameHof {n : ℕ} (P : n.Partition) (P_odd : P ∈ odds n) (a : ℕ) :
     ∑ b ∈ (FromOddPart P a).toFinset, ordProj[2] b = Multiset.count a P.parts := by
   by_cases a_zero : a = 0
   · have ha : a ∉ P.parts := by
@@ -320,21 +315,23 @@ lemma LeftInvPart_same_hof {n : ℕ} (P : n.Partition) (P_odd : P ∈ odds n) (a
     simp
   · apply (Nat.mul_left_inj a_zero).mp
     rw [Finset.sum_mul]
-
-    have lem1 (b : ℕ) (hb : b ∈ (FromOddPart P a).toFinset) : (2 ^ b.factorization 2) * a = b := by
+    have ordProj_mul_hof_eq_self (b : ℕ) (hb : b ∈ (FromOddPart P a).toFinset) :
+        ordProj[2] b * a = b := by
       rw [← FromOddPart_hof P P_odd a b (Multiset.mem_toFinset.mp hb)]
       exact ordProj_mul_ordCompl_eq_self b 2
-    rw [Finset.sum_congr rfl lem1]
+    rw [Finset.sum_congr rfl ordProj_mul_hof_eq_self]
     rw [← FromOddPart_sum P a]
     rw [Finset.sum_multiset_count (FromOddPart P a)]
     apply Finset.sum_congr rfl
     rintro b hb
-    have count_eq_one : Multiset.count b (FromOddPart P a) = 1 := by
-      exact ((Multiset.nodup_iff_count_eq_one.mp (FromOddPart_nodup P a) b) (Multiset.mem_toFinset.mp hb))
+    have count_eq_one : Multiset.count b (FromOddPart P a) = 1 :=
+      (Multiset.nodup_iff_count_eq_one.mp (FromOddPart_nodup P a) b)
+      (Multiset.mem_toFinset.mp hb)
     simp [count_eq_one]
 
 lemma LeftInvPart_diff_hof {n : ℕ} (P : n.Partition) (P_odd : P ∈ odds n) (a : ℕ) :
-    ∀ b ∈ (FromOdd_parts P).toFinset, b ∉ (FromOddPart P a).toFinset → Multiset.count a (FromDistPart b) = 0 := by
+    ∀ b ∈ (FromOdd_parts P).toFinset,
+    b ∉ (FromOddPart P a).toFinset → Multiset.count a (FromDistPart b) = 0 := by
   intro b hb b_notfrom_a
   rw [Multiset.mem_toFinset] at hb b_notfrom_a
   rw [Multiset.count_eq_zero_of_notMem]
@@ -348,22 +345,26 @@ lemma LeftInvPart_diff_hof {n : ℕ} (P : n.Partition) (P_odd : P ∈ odds n) (a
   rw [a_eq_a'] at b_notfrom_a
   contradiction
 
-/- Proof strategy:
-count a = count g f a
-g = ∑ b. Only b = hof a matters
-f = ∑ a'. Only a' with hof a' = hof a matters
--/
-
-lemma LemForCong {n : ℕ} (P : n.Partition) (P_odd : P ∈ odds n) (a b : ℕ) (hb : b ∈ (FromOddPart P a).toFinset) :
+lemma Count_FromDistPart_eq_ordProj {n : ℕ} (P : n.Partition) (P_odd : P ∈ odds n) (a b : ℕ)
+    (hb : b ∈ (FromOddPart P a).toFinset) :
     Multiset.count a (FromDistPart b) = ordProj[2] b := by
   rw [← FromOddPart_hof P P_odd a b (Multiset.mem_toFinset.mp hb)]
   simp [FromDistPart]
 
-lemma LeftInv {n : ℕ} (P : n.Partition) (P_odd : P ∈ odds n) :
-  FromDist (FromOdd P P_odd) (InDist P P_odd) = P := by
+/-- `FromOdd` followed by `FromDist` is the identity on odd partitions.
+Proof strategy : We compute the multiplicity of each integer `a` in `FromDist FromOdd P`.
+`FromDist` is a sum over parts `b` in `FromOdd P`.
+Only parts `b` in the subset `FromOddPart P a` of `FromOdd P` contribute to the multiplicity of `a`.
+This is proven in `LeftInvPart_diff_hof`.
+In `Count_FromDistPart_eq_ordProj`, we show that the multiplicity contribution from each such `b`
+is the largest power of 2 dividing `b`.
+Finally, we use `LeftInvPart_SameHof` to conclude that the total contribution is the
+binary expansion of the original multiplicity of `a` in `P`.
+-/
+theorem LeftInv {n : ℕ} (P : n.Partition) (P_odd : P ∈ odds n) :
+    FromDist (FromOdd P P_odd) (InDist P P_odd) = P := by
   ext a
   simp [FromDist, FromDist_parts]
-  --rw [← Finsetsum_eq_Bind']
   simp [Multiset.count_sum']
   have hsubset : (FromOddPart P a).toFinset ⊆ (FromOdd P P_odd).parts.toFinset := by
     apply Multiset.toFinset_subset.mpr
@@ -373,42 +374,42 @@ lemma LeftInv {n : ℕ} (P : n.Partition) (P_odd : P ∈ odds n) :
     · exact Multiset.le_bind P.parts.dedup (Multiset.mem_dedup.mpr ha)
     · simp [Multiset.count_eq_zero_of_notMem ha, FromOddPart, binary]
   rw [← Finset.sum_subset hsubset (LeftInvPart_diff_hof P P_odd a)]
-  rw [Finset.sum_congr rfl (LemForCong P P_odd a)]
-  exact LeftInvPart_same_hof P P_odd a
+  rw [Finset.sum_congr rfl (Count_FromDistPart_eq_ordProj P P_odd a)]
+  exact LeftInvPart_SameHof P P_odd a
 
--- Now we use FromDistPart_same_hof rather than FromDistPart to help with the right inverse proof
-/-- The sub multiset of a partition `Q` consisting of parts with the same `hof` value as `b`. -/
-def Same_hof {n : ℕ} (Q : n.Partition) (b : ℕ) :
+/-- The sub multiset of a partition `Q` consisting of parts with the same `hof` value as `b`.
+We will use `SameHof` to define `FromDistPartSameHof`.
+It is related to `FromDistPart` and is important in the proof of `RightInv`. -/
+def SameHof {n : ℕ} (Q : n.Partition) (b : ℕ) :
   Multiset ℕ := Multiset.filter (fun b' ↦ (hof b' = hof b)) Q.parts
+
+lemma SameHof_subset {n : ℕ} (Q : n.Partition) (b : ℕ) :
+  SameHof Q b ⊆ Q.parts := Multiset.filter_subset _ _
 
 /-- The multiset consisting of `hof b` with multiplicity equal to the sum of `b' / hof(b')`
 over all parts `b'` in `Q` with the same `hof` value as `b`. -/
-def FromDistPart_same_hof {n : ℕ} (Q : n.Partition) (b : ℕ) : Multiset ℕ :=
-  Multiset.replicate (Multiset.map (fun b' ↦ ordProj[2] b') (Same_hof Q b)).sum (hof b)
-  -- ∑ b' ∈ (Same_hof Q b).toFinset, FromDistPart b'
+def FromDistPartSameHof {n : ℕ} (Q : n.Partition) (b : ℕ) : Multiset ℕ :=
+  Multiset.replicate (Multiset.map (fun b' ↦ ordProj[2] b') (SameHof Q b)).sum (hof b)
 
--- def FromDistPart' {n : ℕ} (Q : n.Partition) (a : ℕ) : Multiset ℕ :=
--- --Multiset.bind (Multiset.filter (fun b ↦ (hof b = a)) P.parts) (FromDistPart)
---   Multiset.replicate (Multiset.map (fun b ↦ ordProj[2] b) (Same_hof Q a)).sum a
-
-lemma FromDistPart_same_hof_eq_Finset_sum {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
-  FromDistPart_same_hof Q b = ∑ b' ∈ (Same_hof Q b).toFinset, FromDistPart b' := by
-  unfold FromDistPart_same_hof FromDistPart
-  have : ∀ b' ∈ (Same_hof Q b).toFinset,
-    Multiset.replicate (2 ^ b'.factorization 2) (hof b') =
-    Multiset.replicate (2 ^ b'.factorization 2) (hof b) := by
+lemma FromDistPartSameHof_eq_Finset_sum {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n)
+    (b : ℕ) : FromDistPartSameHof Q b = ∑ b' ∈ (SameHof Q b).toFinset, FromDistPart b' := by
+  unfold FromDistPartSameHof FromDistPart
+  have : ∀ b' ∈ (SameHof Q b).toFinset,
+      Multiset.replicate (2 ^ b'.factorization 2) (hof b') =
+      Multiset.replicate (2 ^ b'.factorization 2) (hof b) := by
     intro b' hb'
-    simp [Same_hof] at hb'
+    simp [SameHof] at hb'
     rw [hb'.2]
   rw [Finset.sum_congr rfl this]
   symm
   rw [Multiset.eq_replicate]
   constructor
   · simp
-    have : ∑ x ∈ (Same_hof Q b).toFinset, ordProj[2] x = (Multiset.map (fun x ↦ ordProj[2] x) ((Same_hof Q b).dedup)).sum := by rfl
+    have : ∑ x ∈ (SameHof Q b).toFinset, ordProj[2] x =
+      (Multiset.map (fun x ↦ ordProj[2] x) ((SameHof Q b).dedup)).sum := by rfl
     rw [this]
     have Q_Nodup : Q.parts.Nodup := by simpa [distincts] using Q_dist
-    rw [Same_hof]
+    rw [SameHof]
     rw [Multiset.dedup_eq_self.mpr (Multiset.Nodup.filter _ Q_Nodup)]
   · intro b' hb'
     simp at hb'
@@ -416,90 +417,89 @@ lemma FromDistPart_same_hof_eq_Finset_sum {n : ℕ} (Q : n.Partition) (Q_dist : 
     rw [Multiset.mem_replicate] at hb'
     exact hb'.2
 
-lemma Same_hof_subset {n : ℕ} (Q : n.Partition) (b : ℕ) :
-  Same_hof Q b ⊆ Q.parts := Multiset.filter_subset _ _
-
-lemma Count_FromDist_parts_eq_FromDistPart_same_hof {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
-    Multiset.count (hof b) (FromDist_parts Q) = Multiset.count (hof b) (FromDistPart_same_hof Q b) := by
+lemma Count_FromDist_parts_eq_FromDistPartSameHof {n : ℕ}
+    (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
+    Multiset.count (hof b) (FromDist_parts Q)
+  = Multiset.count (hof b) (FromDistPartSameHof Q b) := by
   unfold FromDist_parts
-  rw [FromDistPart_same_hof_eq_Finset_sum Q Q_dist]
+  rw [FromDistPartSameHof_eq_Finset_sum Q Q_dist]
   repeat rw [Multiset.count_sum']
   symm
-  apply Finset.sum_subset (Multiset.toFinset_subset.mpr (Same_hof_subset Q b))
+  apply Finset.sum_subset (Multiset.toFinset_subset.mpr (SameHof_subset Q b)) _
   intro b' hb' hb''
   rw [Multiset.mem_toFinset] at *
   unfold FromDistPart
   rw [Multiset.count_replicate]
   simp
-  simp [Same_hof] at hb''
+  simp [SameHof] at hb''
   exact hb'' hb'
 
 /-- The multiset of exponents of 2 for parts in `Q` with the same `hof` value as `b`. -/
-def Same_hof_bitIndices {n : ℕ} (Q : n.Partition) (b : ℕ) : Multiset ℕ :=
-  Multiset.map (fun b' ↦ b'.factorization 2) (Same_hof Q b)
+def SameHof_bitIndices {n : ℕ} (Q : n.Partition) (b : ℕ) : Multiset ℕ :=
+  Multiset.map (fun b' ↦ b'.factorization 2) (SameHof Q b)
 
 /-- The finite set of exponents of 2 for parts in `Q` with the same `hof` value as `b`.
 Non-duplication is implied by `Q` being a distinct partition. -/
-def Same_hof_bitIndices_finset {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
+def SameHof_bitIndices_finset {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
     Finset ℕ :=
-  { val := Same_hof_bitIndices Q b
+  { val := SameHof_bitIndices Q b
     nodup := by
       apply Multiset.Nodup.map_on
       · intro x hx y hy heq
         rw [← ordProj_mul_ordCompl_eq_self x 2, ← ordProj_mul_ordCompl_eq_self y 2]
-        simp [Same_hof, hof] at hx hy
+        simp [SameHof, hof] at hx hy
         rw [hx.2, hy.2, heq]
       · apply Multiset.Nodup.filter
         simpa [distincts] using Q_dist }
 
 /-- The sorted list of exponents of 2 for parts in `Q` with the same `hof` value as `b`. -/
-def Same_hof_bitIndices_list {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
-  List ℕ := Finset.sort (· ≤ ·) (Same_hof_bitIndices_finset Q Q_dist b)
+def SameHof_bitIndices_list {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) : List ℕ :=
+  Finset.sort (· ≤ ·) (SameHof_bitIndices_finset Q Q_dist b)
 
-lemma Same_hof_ordProj_eq_twopow_bitIndices {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
-    Multiset.map (fun b' ↦ ordProj[2] b') (Same_hof Q b) =
-    List.map (fun i ↦ 2 ^ i) (Same_hof_bitIndices_list Q Q_dist b) := by
-    --Multiset.map (fun i ↦ 2 ^ i) (Same_hof_bitIndices Q b) := by
-  unfold Same_hof_bitIndices_list
-  rw [← Multiset.map_coe, Finset.sort_eq]
-  simp [Same_hof_bitIndices_finset, Same_hof_bitIndices]
-
-lemma Same_hof_count_eq_bitIndices {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
-    (Multiset.count (hof b) (FromDistPart_same_hof Q b)).bitIndices =
-    Same_hof_bitIndices_list Q Q_dist b := by
-  simp [FromDistPart_same_hof]
-  rw [Same_hof_ordProj_eq_twopow_bitIndices Q Q_dist b, Multiset.sum_coe]
-  have sort : List.Sorted (· < ·) (Same_hof_bitIndices_list Q Q_dist b) := Finset.sort_sorted_lt _
+lemma SameHof_count_eq_bitIndices {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
+    (Multiset.count (hof b) (FromDistPartSameHof Q b)).bitIndices =
+    SameHof_bitIndices_list Q Q_dist b := by
+  simp [FromDistPartSameHof]
+  have : Multiset.map (fun b' ↦ ordProj[2] b') (SameHof Q b) =
+      List.map (fun i ↦ 2 ^ i) (SameHof_bitIndices_list Q Q_dist b) := by
+    unfold SameHof_bitIndices_list
+    rw [← Multiset.map_coe, Finset.sort_eq]
+    simp [SameHof_bitIndices_finset, SameHof_bitIndices]
+  rw [this, Multiset.sum_coe]
+  have sort : List.Sorted (· < ·) (SameHof_bitIndices_list Q Q_dist b) := Finset.sort_sorted_lt _
   exact bitIndices_twoPowsum sort
 
-lemma RightInvPart {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
-    (FromOddPart (FromDist Q Q_dist) (hof b)) = Same_hof Q b := by
+/-- This is a key lemma to prove `RightInv`. Important Ingredients are
+ `Count_FromDist_parts_eq_FromDistPartSameHof` and `SameHof_count_eq_bitIndices`.
+-/
+lemma RightInvPart_same_hof {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
+    (FromOddPart (FromDist Q Q_dist) (hof b)) = SameHof Q b := by
   simp [FromOddPart, FromDist]
-  rw [Count_FromDist_parts_eq_FromDistPart_same_hof Q Q_dist b]
+  rw [Count_FromDist_parts_eq_FromDistPartSameHof Q Q_dist b]
   rw [binary]
-  rw [Same_hof_count_eq_bitIndices Q Q_dist b]
-  simp only [Same_hof_bitIndices_list, Same_hof_bitIndices_finset, Same_hof_bitIndices]
+  rw [SameHof_count_eq_bitIndices Q Q_dist b]
+  simp only [SameHof_bitIndices_list, SameHof_bitIndices_finset, SameHof_bitIndices]
   simp only [Finset.sort_mk, ← Multiset.map_coe, Multiset.sort_eq]
   nth_rewrite 2 [Multiset.map_map]
   rw [Multiset.map_map]
-  have same_hof_eq_composedMap :
-      ∀ b' ∈ Same_hof Q b,
-        ((fun x => x * hof b) ∘ (fun i => 2 ^ i) ∘ (fun b'' => b''.factorization 2)) b' =
-        (fun b'' => b'') b' := by
+  have SameHof_eq_composedMap :
+      ∀ b' ∈ SameHof Q b,
+        ((fun x ↦ x * hof b) ∘ (fun i ↦ 2 ^ i) ∘ (fun b'' ↦ b''.factorization 2)) b' =
+        (fun b'' ↦ b'') b' := by
     intro b' hb'
-    simp [Same_hof] at hb'
+    simp [SameHof] at hb'
     simp [hof] at *
     rw [← hb'.2]
     exact ordProj_mul_ordCompl_eq_self b' 2
-  rw [Multiset.map_congr rfl same_hof_eq_composedMap]
+  rw [Multiset.map_congr rfl SameHof_eq_composedMap]
   simp
 
 lemma RightInvPart_diff_hof {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
     ∀ a ∈ (FromDist Q Q_dist).parts.toFinset,
-      a ∉ (FromDistPart_same_hof Q b).toFinset →
+      a ∉ (FromDistPartSameHof Q b).toFinset →
       Multiset.count b (FromOddPart (FromDist Q Q_dist) a) = 0 := by
   intro a ha a_not_in_hofb
-  -- Show a = hof b' for some b' in Q
+  /- Show a = hof b' for some b' in Q -/
   simp [Multiset.mem_toFinset] at ha
   have a_odd : Odd a := by
     have FromDist_Q_odd : FromDist Q Q_dist ∈ odds n := InOdd Q Q_dist
@@ -508,7 +508,7 @@ lemma RightInvPart_diff_hof {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distinct
   simp [FromDist, FromDist_parts] at ha
   rcases ha with ⟨b', b'_in_Q, ha⟩
   simp [FromDistPart, Multiset.mem_replicate] at ha
-  -- Assume for the sake of contradiction that count b ≠ 0; then b = 2 ^ i * a for some i
+  /- Assume for the sake of contradiction that count b ≠ 0; then b = 2 ^ i * a for some i. -/
   rw [Multiset.count_eq_zero]
   intro contra
   simp [FromOddPart] at contra
@@ -516,81 +516,63 @@ lemma RightInvPart_diff_hof {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distinct
   simp [binary] at hx
   rcases hx with ⟨i, hi, hx⟩
   rw [← hx] at contra
-
   have a_eq_hofb : a = hof b := by
     rw [← contra, hof_two_pow_mul a i, hof_eq_of_odd a_odd]
-  simp only [FromDistPart_same_hof, Multiset.toFinset_replicate] at a_not_in_hofb
-  -- Prove by cases depending on `Same_hof Q b is empty or not`
-  by_cases h : (Multiset.map (fun b' => ordProj[2] b') (Same_hof Q b)).sum = 0
+  simp only [FromDistPartSameHof, Multiset.toFinset_replicate] at a_not_in_hofb
+  /- Prove by cases depending on `SameHof Q b is empty or not` -/
+  by_cases h : (Multiset.map (fun b' ↦ ordProj[2] b') (SameHof Q b)).sum = 0
   · simp [h] at a_not_in_hofb
     rw [a_eq_hofb] at ha
-    have b'_in_Same_hof : b' ∈ Same_hof Q b := by simpa [Same_hof] using ⟨b'_in_Q, ha.symm⟩
+    have b'_in_SameHof : b' ∈ SameHof Q b := by simpa [SameHof] using ⟨b'_in_Q, ha.symm⟩
     have eq_zero : ordProj[2] b' = 0 := by
       apply Nat.eq_zero_of_le_zero
       rw [← h]
-      exact Multiset.le_sum_of_mem (Multiset.mem_map_of_mem (fun b' => ordProj[2] b') b'_in_Same_hof)
+      exact Multiset.le_sum_of_mem (Multiset.mem_map_of_mem (fun b' ↦ ordProj[2] b') b'_in_SameHof)
     have ne_zero : ordProj[2] b' ≠ 0 := Nat.pos_iff_ne_zero.mp (ordProj_pos b' 2)
     contradiction
   · simp [h] at a_not_in_hofb
     contradiction
 
-/- Proof strategy : For each b ∈ Q, count FromOdd (FromDist b) = count b.
-count b = count f g b
-f = ∑ a. Only a = hof b matters
-g = ∑ b'. Only b' with hof b' = hof b matters
+/-- `FromDist` followed by `FromOdd` is the identity on distinct partitions.
+Proof strategy : We compute the multiplicity of each integer `b` in `FromOdd FromDist Q`.
+`FromDist` is a sum over parts `b` in `FromOdd P`.
+Only parts `a` in the subset `FromDistPartSameHof Q b` of `FromOdd P` contribute to
+the multiplicity of `b`.
+This is proven in `RightInvPart_diff_hof`.
+Such `a` has to be `hof b`, so instead of `FromOdd` we can consider only `FromOddPart hof b`.
+The reduced case is then handled by `RightInvPart_same_hof`.
 -/
-
-lemma RightInv {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) :
+theorem RightInv {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) :
     FromOdd (FromDist Q Q_dist) (InOdd Q Q_dist) = Q := by
   ext b
   simp [FromOdd, FromOdd_parts]
   rw [← Finsetsum_eq_Bind]
   simp [Multiset.count_sum']
-  have hsubset : (FromDistPart_same_hof Q b) ⊆ (FromDist Q Q_dist).parts := by
-    simp [FromDist]
-    apply Multiset.subset_of_le
-    rw [FromDistPart_same_hof_eq_Finset_sum Q Q_dist, FromDist_parts]
-    apply Finset.sum_le_sum_of_subset
+  have hsubset : (FromDistPartSameHof Q b).toFinset ⊆ (FromDist Q Q_dist).parts.toFinset := by
     apply Multiset.toFinset_subset.mpr
-    rw [Same_hof]
-    apply Multiset.filter_subset
-  rw [← Finset.sum_subset (Multiset.toFinset_subset.mpr hsubset) (RightInvPart_diff_hof Q Q_dist b)]
-  -- Prove by cases depending on `Same_hof Q b is empty or not`
-  by_cases h : (Multiset.map (fun b' => ordProj[2] b') (Same_hof Q b)).sum = 0
-  · simp [FromDistPart_same_hof, h]
+    simp [FromDist, FromDist_parts]
+    apply Multiset.subset_of_le
+    rw [FromDistPartSameHof_eq_Finset_sum Q Q_dist]
+    apply Finset.sum_le_sum_of_subset
+    exact Multiset.toFinset_subset.mpr (SameHof_subset Q b)
+  rw [← Finset.sum_subset hsubset (RightInvPart_diff_hof Q Q_dist b)]
+  /- Prove by cases depending on `SameHof Q b is empty or not` -/
+  by_cases h : (Multiset.map (fun b' ↦ ordProj[2] b') (SameHof Q b)).sum = 0
+  · simp [FromDistPartSameHof, h]
     rw [Multiset.count_eq_zero.mpr]
     intro b_in_Q
-    have b_in_Same_hof : b ∈ Same_hof Q b := by simpa [Same_hof] using b_in_Q
+    have b_in_SameHof : b ∈ SameHof Q b := by simpa [SameHof] using b_in_Q
     have eq_zero : ordProj[2] b = 0 := by
       apply Nat.eq_zero_of_le_zero
       rw [← h]
-      exact Multiset.le_sum_of_mem (Multiset.mem_map_of_mem (fun b' => ordProj[2] b') b_in_Same_hof)
+      exact Multiset.le_sum_of_mem (Multiset.mem_map_of_mem (fun b' ↦ ordProj[2] b') b_in_SameHof)
     have ne_zero : ordProj[2] b ≠ 0 := Nat.pos_iff_ne_zero.mp (ordProj_pos b 2)
     contradiction
-  · simp [FromDistPart_same_hof, h]
-    rw [RightInvPart Q Q_dist b]
-    simp [Same_hof]
+  · simp [FromDistPartSameHof, h]
+    rw [RightInvPart_same_hof Q Q_dist b]
+    simp [SameHof]
 
+/-- Euler's identity: The number of odd partitions of `n` equals
+the number of distinct partitions of `n`. -/
 theorem EulerIdentity (n : ℕ) : (odds n).card = (distincts n).card :=
-    Finset.card_bij' FromOdd FromDist InDist InOdd LeftInv RightInv
-
---11/7/2025
--- Rename lemmas which are called lemmas, e.g. the eq's, aux, this.
--- Add some comments to make the proof more understandable
---    in the middle of lemmas add comments
--- Find anyways to make the code slightly more readable,
---    by combine shortlines and break up long lines
--- Try to make consistent spacing and notation convention
--- Read from bottom to top to check dependencies
--- Hanzhe look at more general things
---
-
---11/14/2025
---renamed eq aux lemmas
--- look at count_eq for potential rename
-
---11/21/2025
--- finished count_eq rename
--- made lemmas name and statement consistent up until fromoddparts
--- question: FromOddPart_pos we put comment on top of it, should we get rid of it since it's quite obvious?
---    or should we add comments to more lemmas?
+  Finset.card_bij' FromOdd FromDist InDist InOdd LeftInv RightInv

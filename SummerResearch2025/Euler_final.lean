@@ -44,8 +44,8 @@ lemma binary_nodup (a : ℕ) : (binary a).Nodup := by
   apply Multiset.coe_nodup.mpr
   exact List.Nodup.map (Nat.pow_right_injective (le_refl 2)) (List.Sorted.nodup (bitIndices_sorted))
 
-lemma binary_sum (a : ℕ) : (binary a).sum = a := by
-  apply twoPowSum_bitIndices
+-- lemma binary_sum (a : ℕ) : (binary a).sum = a := by
+--   apply twoPowSum_bitIndices
 
 /-- The highest odd factor of a natural number `b` -/
 def hof (b : ℕ) : ℕ := ordCompl[2] b
@@ -129,7 +129,7 @@ lemma FromOddPart_sum {n : ℕ} (P : n.Partition) (a : ℕ) :
     (FromOddPart P a).sum = (Multiset.count a P.parts) * a := by
   unfold FromOddPart
   rw [Multiset.sum_map_mul_right, Multiset.map_id']
-  rw [binary_sum]
+  simp [binary]
 
 lemma FromOddPart_nodup {n : ℕ} (P : n.Partition) (a : ℕ) :
     (FromOddPart P a).Nodup := by

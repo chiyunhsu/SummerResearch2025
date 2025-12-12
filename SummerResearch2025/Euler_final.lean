@@ -51,23 +51,21 @@ lemma binary_sum (a : ℕ) : (binary a).sum = a := by
 def hof (b : ℕ) : ℕ := ordCompl[2] b
 
 -- The following theorems are subtmitted to mathhlib4 as part of PR #32715.
-theorem ordProj_PrimePow_eq_self {p k : ℕ} (hp : Nat.Prime p) : ordProj[p] (p ^ k) = p ^ k := by
-  have pow_ne_zero : p ^ k ≠ 0 := pow_ne_zero k (Nat.Prime.ne_zero hp)
+theorem ordProj_self_pow {p k : ℕ} (hp : Nat.Prime p) : ordProj[p] (p ^ k) = p ^ k := by
   apply eq_of_factorization_eq
   · exact pos_iff_ne_zero.mp (ordProj_pos (p ^ k) p)
-  · exact pow_ne_zero
+  · exact pow_ne_zero k hp.ne_zero
   · simp [Nat.Prime.factorization_pow hp]
 
-theorem ordCompl_PrimePow_eq_one {p k : ℕ} (hp : Nat.Prime p) : ordCompl[p] (p ^ k) = 1 := by
-  have pow_ne_zero : p ^ k ≠ 0 := pow_ne_zero k (Nat.Prime.ne_zero hp)
+theorem ordCompl_self_pow {p k : ℕ} (hp : Nat.Prime p) : ordCompl[p] (p ^ k) = 1 := by
   apply eq_of_factorization_eq
-  · exact pos_iff_ne_zero.mp (ordCompl_pos p pow_ne_zero)
+  · exact pos_iff_ne_zero.mp (ordCompl_pos p (pow_ne_zero k hp.ne_zero))
   · exact one_ne_zero
   · simp [Nat.Prime.factorization_pow hp]
 
-theorem ordCompl_PrimePow_mul_eq_self (n k : ℕ) {p : ℕ} (hp : Nat.Prime p) :
+theorem ordCompl_self_pow_mul (n k : ℕ) {p : ℕ} (hp : Nat.Prime p) :
     ordCompl[p] (p ^ k * n) = ordCompl[p] n := by
-  rw [ordCompl_mul, ordCompl_PrimePow_eq_one hp, one_mul]
+  rw [ordCompl_mul, ordCompl_self_pow hp, one_mul]
 
 theorem ordCompl_eq_self_iff_zero_or_not_dvd (n : ℕ) {p : ℕ} (hp : Nat.Prime p) :
     ordCompl[p] n = n ↔ n = 0 ∨ ¬p ∣ n := by
@@ -80,9 +78,7 @@ theorem ordCompl_eq_self_iff_zero_or_not_dvd (n : ℕ) {p : ℕ} (hp : Nat.Prime
       exact not_dvd_ordCompl hp n_zero
   · rintro (n_eq_zero | not_dvd)
     · simp [n_eq_zero]
-    · have : n.factorization p = 0 := factorization_eq_zero_of_not_dvd not_dvd
-      rw [this]
-      simp
+    · simp [Nat.factorization_eq_zero_of_not_dvd not_dvd]
 -- The above theorems are subtmitted to mathhlib4 as part of PR #32715.
 
 lemma hof_eq_iff_odd_or_zero (b : ℕ) : hof b = b ↔ (b = 0 ∨ Odd b) := by
@@ -97,7 +93,7 @@ lemma hof_eq_of_odd {b : ℕ} (hodd : Odd b) : hof b = b :=
   ((hof_eq_iff_odd_or_zero b).mpr (Or.inr hodd))
 
 lemma hof_two_pow_mul (b i : ℕ) : hof (2 ^ i * b) = hof (b) :=
-  ordCompl_PrimePow_mul_eq_self b i prime_two
+  ordCompl_self_pow_mul b i prime_two
 
 /-- Given a part `a` of a partition `P`, construct the multiset consisting of `a * 2 ^ i`,
 where `2 ^ i` is in the binary expansion of the multiplicity of `a`. -/

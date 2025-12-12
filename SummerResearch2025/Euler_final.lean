@@ -50,7 +50,7 @@ lemma binary_sum (a : ℕ) : (binary a).sum = a := by
 /-- The highest odd factor of a natural number `b` -/
 def hof (b : ℕ) : ℕ := ordCompl[2] b
 
--- Suggest to add
+-- The following theorems are subtmitted to mathhlib4 as part of PR #32715.
 theorem ordProj_PrimePow_eq_self {p k : ℕ} (hp : Nat.Prime p) : ordProj[p] (p ^ k) = p ^ k := by
   have pow_ne_zero : p ^ k ≠ 0 := pow_ne_zero k (Nat.Prime.ne_zero hp)
   apply eq_of_factorization_eq
@@ -83,7 +83,7 @@ theorem ordCompl_eq_self_iff_zero_or_not_dvd (n : ℕ) {p : ℕ} (hp : Nat.Prime
     · have : n.factorization p = 0 := factorization_eq_zero_of_not_dvd not_dvd
       rw [this]
       simp
--- End of Suggest to Add
+-- The above theorems are subtmitted to mathhlib4 as part of PR #32715.
 
 lemma hof_eq_iff_odd_or_zero (b : ℕ) : hof b = b ↔ (b = 0 ∨ Odd b) := by
   rw [← not_even_iff_odd, even_iff_two_dvd]

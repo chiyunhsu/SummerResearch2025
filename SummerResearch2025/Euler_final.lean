@@ -6,7 +6,7 @@ Authors: Chi-Yun Hsu, Hanzhe Zhang, Tamanna Agarwal
 import Mathlib.Data.Nat.BitIndices
 import Mathlib.Data.Nat.Factorization.Basic
 import Mathlib.Data.Finset.Pairwise
-import Mathlib.Combinatorics.Enumerative.Partition
+import Mathlib.Combinatorics.Enumerative.Partition.Basic
 
 /-!
 # Euler's Partition Theorem with Combinatorial Proof
@@ -42,41 +42,10 @@ def binary (a : ℕ) : Multiset ℕ := a.bitIndices.map (fun i ↦ 2 ^ i)
 
 lemma binary_nodup (a : ℕ) : (binary a).Nodup := by
   apply Multiset.coe_nodup.mpr
-  exact List.Nodup.map (Nat.pow_right_injective (le_refl 2)) (List.Sorted.nodup (bitIndices_sorted))
+  exact List.Nodup.map (Nat.pow_right_injective (le_refl 2)) bitIndices_nodup
 
 /-- The highest odd factor of a natural number `b` -/
 def hof (b : ℕ) : ℕ := ordCompl[2] b
-
--- The following theorems are subtmitted to mathhlib4 as part of PR #32715.
-theorem ordProj_self_pow {p k : ℕ} (hp : Nat.Prime p) : ordProj[p] (p ^ k) = p ^ k := by
-  apply eq_of_factorization_eq
-  · exact pos_iff_ne_zero.mp (ordProj_pos (p ^ k) p)
-  · exact pow_ne_zero k hp.ne_zero
-  · simp [Nat.Prime.factorization_pow hp]
-
-theorem ordCompl_self_pow {p k : ℕ} (hp : Nat.Prime p) : ordCompl[p] (p ^ k) = 1 := by
-  apply eq_of_factorization_eq
-  · exact pos_iff_ne_zero.mp (ordCompl_pos p (pow_ne_zero k hp.ne_zero))
-  · exact one_ne_zero
-  · simp [Nat.Prime.factorization_pow hp]
-
-theorem ordCompl_self_pow_mul (n k : ℕ) {p : ℕ} (hp : Nat.Prime p) :
-    ordCompl[p] (p ^ k * n) = ordCompl[p] n := by
-  rw [ordCompl_mul, ordCompl_self_pow hp, one_mul]
-
-theorem ordCompl_eq_self_iff_zero_or_not_dvd (n : ℕ) {p : ℕ} (hp : Nat.Prime p) :
-    ordCompl[p] n = n ↔ n = 0 ∨ ¬p ∣ n := by
-  constructor
-  · intro h
-    by_cases n_zero : n = 0
-    · simp [n_zero]
-    · right
-      rw [← h]
-      exact not_dvd_ordCompl hp n_zero
-  · rintro (n_eq_zero | not_dvd)
-    · simp [n_eq_zero]
-    · simp [Nat.factorization_eq_zero_of_not_dvd not_dvd]
--- The above theorems are subtmitted to mathhlib4 as part of PR #32715.
 
 lemma hof_eq_iff_odd_or_zero (b : ℕ) : hof b = b ↔ (b = 0 ∨ Odd b) := by
   rw [← not_even_iff_odd, even_iff_two_dvd]
@@ -211,7 +180,7 @@ theorem InDist {n : ℕ} (P : n.Partition) (P_odd : P ∈ (odds n)) :
     exact FromOddPart_nodup P a
   /- Different FromOddPart P a are disjoint. -/
   · unfold Multiset.Pairwise
-    let PPartList := Multiset.sort (· ≤ ·) P.parts.dedup
+    let PPartList := Multiset.sort P.parts.dedup
     have PPartList_nodup : PPartList.Nodup := by
       apply Multiset.coe_nodup.mp
       rw [Multiset.sort_eq]
@@ -283,7 +252,7 @@ def FromDist {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) : n.Partit
 /-- The image of a distinct partition under `FromDist` is an odd partition. -/
 theorem InOdd {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) :
     FromDist Q Q_dist ∈ odds n := by
-  simp [odds]
+  simp [odds, restricted]
   intro a ha
   simp [FromDist, FromDist_parts] at ha
   rcases ha with ⟨b, hb, ha⟩
@@ -444,7 +413,7 @@ def SameHof_bitIndices_finset {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distin
 
 /-- The sorted list of exponents of 2 for parts in `Q` with the same `hof` value as `b`. -/
 def SameHof_bitIndices_list {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) : List ℕ :=
-  Finset.sort (· ≤ ·) (SameHof_bitIndices_finset Q Q_dist b)
+  Finset.sort (SameHof_bitIndices_finset Q Q_dist b)
 
 lemma SameHof_count_eq_bitIndices {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distincts n) (b : ℕ) :
     (Multiset.count (hof b) (FromDistPartSameHof Q b)).bitIndices =
@@ -456,7 +425,7 @@ lemma SameHof_count_eq_bitIndices {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ di
     rw [← Multiset.map_coe, Finset.sort_eq]
     simp [SameHof_bitIndices_finset, SameHof_bitIndices]
   rw [this, Multiset.sum_coe]
-  have sort : List.Sorted (· < ·) (SameHof_bitIndices_list Q Q_dist b) := Finset.sort_sorted_lt _
+  have sort : List.SortedLT (SameHof_bitIndices_list Q Q_dist b) := Finset.sortedLT_sort _
   exact bitIndices_twoPowsum sort
 
 /-- This is a key lemma to prove `RightInv`. Important Ingredients are
@@ -493,7 +462,7 @@ lemma RightInvPart_diff_hof {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distinct
   simp [Multiset.mem_toFinset] at ha
   have a_odd : Odd a := by
     have FromDist_Q_odd : FromDist Q Q_dist ∈ odds n := InOdd Q Q_dist
-    simp [odds] at FromDist_Q_odd
+    simp [odds, restricted] at FromDist_Q_odd
     exact FromDist_Q_odd a ha
   simp [FromDist, FromDist_parts] at ha
   rcases ha with ⟨b', b'_in_Q, ha⟩

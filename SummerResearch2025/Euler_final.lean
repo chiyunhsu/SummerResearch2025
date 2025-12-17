@@ -44,9 +44,6 @@ lemma binary_nodup (a : ℕ) : (binary a).Nodup := by
   apply Multiset.coe_nodup.mpr
   exact List.Nodup.map (Nat.pow_right_injective (le_refl 2)) (List.Sorted.nodup (bitIndices_sorted))
 
--- lemma binary_sum (a : ℕ) : (binary a).sum = a := by
---   apply twoPowSum_bitIndices
-
 /-- The highest odd factor of a natural number `b` -/
 def hof (b : ℕ) : ℕ := ordCompl[2] b
 
@@ -88,9 +85,6 @@ lemma hof_eq_iff_odd_or_zero (b : ℕ) : hof b = b ↔ (b = 0 ∨ Odd b) := by
 lemma hof_is_odd {b : ℕ} (b_ne_zero : b ≠ 0) : Odd (hof b) := by
   rw [← not_even_iff_odd, even_iff_two_dvd]
   exact not_dvd_ordCompl prime_two b_ne_zero
-
-lemma hof_eq_of_odd {b : ℕ} (hodd : Odd b) : hof b = b :=
-  ((hof_eq_iff_odd_or_zero b).mpr (Or.inr hodd))
 
 lemma hof_two_pow_mul (b i : ℕ) : hof (2 ^ i * b) = hof (b) :=
   ordCompl_self_pow_mul b i prime_two
@@ -513,7 +507,8 @@ lemma RightInvPart_diff_hof {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distinct
   rcases hx with ⟨i, hi, hx⟩
   rw [← hx] at contra
   have a_eq_hofb : a = hof b := by
-    rw [← contra, hof_two_pow_mul a i, hof_eq_of_odd a_odd]
+    rw [← contra, hof_two_pow_mul a i, (hof_eq_iff_odd_or_zero a).mpr (Or.inr a_odd)]
+
   simp only [FromDistPartSameHof, Multiset.toFinset_replicate] at a_not_in_hofb
   /- Prove by cases depending on `SameHof Q b is empty or not` -/
   by_cases h : (Multiset.map (fun b' ↦ ordProj[2] b') (SameHof Q b)).sum = 0

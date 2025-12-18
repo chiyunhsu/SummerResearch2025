@@ -3,10 +3,12 @@ Copyright (c) 2025 Chi-Yun Hsu, Hanzhe Zhang, Tamanna Agarwal. All rights reserv
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chi-Yun Hsu, Hanzhe Zhang, Tamanna Agarwal
 -/
-import Mathlib.Data.Nat.BitIndices
-import Mathlib.Data.Nat.Factorization.Basic
-import Mathlib.Data.Finset.Pairwise
-import Mathlib.Combinatorics.Enumerative.Partition.Basic
+module
+
+public import Mathlib.Data.Nat.BitIndices
+public import Mathlib.Data.Nat.Factorization.Basic
+public import Mathlib.Data.Finset.Pairwise
+public import Mathlib.Combinatorics.Enumerative.Partition.Basic
 
 /-!
 # Euler's Partition Theorem with Combinatorial Proof
@@ -26,8 +28,6 @@ Conversely, starting from a distinct partition, we map each part `b` (with multi
 the multiset consisting of `hof b`, the highest odd factor of `b`, with multiplicity `b / hof(b)`.
 
 ## References
-
-* [G. E. Andrews, *Euler’s partition identity-finite version*][andrews2016]
 * <https://dspace.mit.edu/bitstream/handle/1721.1/123321/18-312-spring-2009/contents/readings-and-lecture-notes/MIT18_312S09_lec10_Patitio.pdf>
 
 ## Tags
@@ -47,7 +47,7 @@ lemma binary_nodup (a : ℕ) : (binary a).Nodup := by
 /-- The highest odd factor of a natural number `b` -/
 def hof (b : ℕ) : ℕ := ordCompl[2] b
 
-lemma hof_eq_iff_odd_or_zero (b : ℕ) : hof b = b ↔ (b = 0 ∨ Odd b) := by
+lemma hof_eq_iff_zero_or_odd (b : ℕ) : hof b = b ↔ (b = 0 ∨ Odd b) := by
   rw [← not_even_iff_odd, even_iff_two_dvd]
   exact ordCompl_eq_self_iff_zero_or_not_dvd b prime_two
 
@@ -82,8 +82,8 @@ lemma FromOddPart_pos {n : ℕ} (P : n.Partition) (a : ℕ) {b : ℕ} :
       rcases hx with ⟨y, hy, hx⟩
       rw [← hx]
       exact Nat.pow_pos zero_lt_two
-    rw [← hb]
     have a_pos : a > 0 := P.parts_pos ha
+    rw [← hb]
     exact Nat.mul_pos x_pos a_pos
   · rw [FromOddPart_empty_of_notMem P a ha] at hb
     contradiction
@@ -94,8 +94,7 @@ lemma FromOddPart_sum {n : ℕ} (P : n.Partition) (a : ℕ) :
   rw [Multiset.sum_map_mul_right, Multiset.map_id']
   simp [binary]
 
-lemma FromOddPart_nodup {n : ℕ} (P : n.Partition) (a : ℕ) :
-    (FromOddPart P a).Nodup := by
+lemma FromOddPart_nodup {n : ℕ} (P : n.Partition) (a : ℕ) : (FromOddPart P a).Nodup := by
   by_cases ha : a ∈ P.parts
   · apply Multiset.Nodup.map
     /- fun x ↦ x * a is injective -/
@@ -119,7 +118,7 @@ lemma FromOddPart_hof {n : ℕ} (P : n.Partition) (P_odd : P ∈ (odds n)) (a : 
     simp [binary] at hx
     rcases hx with ⟨i, hi, hx⟩
     rw [← hb, ← hx, hof_two_pow_mul a i]
-    apply (hof_eq_iff_odd_or_zero a).mpr
+    apply (hof_eq_iff_zero_or_odd a).mpr
     right
     apply Nat.not_even_iff_odd.mp
     exact (Finset.mem_filter.mp P_odd).2 a ha
@@ -476,7 +475,7 @@ lemma RightInvPart_diff_hof {n : ℕ} (Q : n.Partition) (Q_dist : Q ∈ distinct
   rcases hx with ⟨i, hi, hx⟩
   rw [← hx] at contra
   have a_eq_hofb : a = hof b := by
-    rw [← contra, hof_two_pow_mul a i, (hof_eq_iff_odd_or_zero a).mpr (Or.inr a_odd)]
+    rw [← contra, hof_two_pow_mul a i, (hof_eq_iff_zero_or_odd a).mpr (Or.inr a_odd)]
 
   simp only [FromDistPartSameHof, Multiset.toFinset_replicate] at a_not_in_hofb
   /- Prove by cases depending on `SameHof Q b is empty or not` -/
